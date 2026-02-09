@@ -1,0 +1,106 @@
+/* ─── Bid Panel ─── */
+.bid-panel {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  max-width: 500px;
+  margin: 20px auto;
+  text-align: center;
+  animation: slideUp 0.3s ease;
+}
+
+.bid-panel h3 {
+  font-size: 20px;
+  margin-bottom: 8px;
+}
+
+.bid-hint {
+  color: var(--text-secondary);
+  font-size: 14px;
+  margin-bottom: 20px;
+}
+
+.bid-selector {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.bid-btn {
+  width: 48px;
+  height: 48px;
+  border: 2px solid var(--border);
+  border-radius: 50%;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bid-btn:hover {
+  border-color: var(--accent);
+  background: var(--bg-card-hover);
+}
+
+.bid-btn.selected {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+  transform: scale(1.1);
+}
+
+.bid-submitted {
+  padding: 16px;
+}
+
+.bid-submitted h3 {
+  color: var(--success);
+}
+
+.bids-status {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.bid-status-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 12px;
+  background: var(--bg-card);
+  border-radius: var(--radius-sm);
+  min-width: 80px;
+}
+
+.bid-status-item.bid-done {
+  border: 1px solid var(--success);
+}
+
+.bid-player-name {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.bid-value {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}

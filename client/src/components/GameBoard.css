@@ -1,0 +1,548 @@
+/* ─── Game Board ─── */
+.game-board {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 60px;
+}
+
+/* ─── Top Bar ─── */
+.game-top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 20px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 40;
+}
+
+.round-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.round-badge {
+  background: var(--accent);
+  color: white;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.trick-badge {
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.phase-info {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.game-error {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid var(--danger);
+  color: var(--danger);
+  padding: 8px 16px;
+  text-align: center;
+  font-size: 13px;
+  animation: shake 0.3s ease;
+}
+
+/* ─── Bidding Area ─── */
+.bidding-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding-bottom: 60px;
+}
+
+/* ═══════════════════════════════════════════
+   TABLE LAYOUT
+   ═══════════════════════════════════════════ */
+
+.table-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.table {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+}
+
+.table-felt {
+  position: relative;
+  width: 100%;
+  max-width: 700px;
+  height: 420px;
+  background: radial-gradient(ellipse at center, #1a5c2e 0%, #0f3d1e 60%, #0a2914 100%);
+  border-radius: 50% / 45%;
+  border: 6px solid #3a2a1a;
+  box-shadow:
+    inset 0 0 60px rgba(0, 0, 0, 0.4),
+    0 4px 20px rgba(0, 0, 0, 0.5),
+    0 0 0 3px #5a4030;
+  overflow: visible;
+}
+
+/* ─── Seats around the table ─── */
+.table-seat {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  z-index: 5;
+}
+
+/* Position seats around the ellipse */
+.seat-top {
+  top: -30px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.seat-top-left {
+  top: 10px;
+  left: 12%;
+  transform: translateX(-50%);
+}
+
+.seat-top-right {
+  top: 10px;
+  left: 88%;
+  transform: translateX(-50%);
+}
+
+.seat-left {
+  top: 50%;
+  left: -10px;
+  transform: translate(-50%, -50%);
+}
+
+.seat-right {
+  top: 50%;
+  right: -10px;
+  transform: translate(50%, -50%);
+}
+
+.seat-bottom-left {
+  bottom: 10px;
+  left: 15%;
+  transform: translateX(-50%);
+}
+
+.seat-bottom-right {
+  bottom: 10px;
+  right: 15%;
+  transform: translateX(50%);
+}
+
+.seat-bottom {
+  bottom: -35px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* ─── Player at seat ─── */
+.seat-player {
+  background: rgba(15, 23, 42, 0.9);
+  border: 2px solid rgba(100, 116, 139, 0.4);
+  border-radius: 10px;
+  padding: 6px 10px;
+  text-align: center;
+  min-width: 90px;
+  backdrop-filter: blur(4px);
+  transition: all 0.3s ease;
+}
+
+.seat-player.active-turn {
+  border-color: var(--gold);
+  box-shadow: 0 0 14px rgba(251, 191, 36, 0.4);
+  background: rgba(251, 191, 36, 0.08);
+}
+
+.seat-player.my-seat {
+  border-color: var(--accent);
+  background: rgba(99, 102, 241, 0.08);
+}
+
+.seat-player.my-seat.active-turn {
+  border-color: var(--gold);
+  box-shadow: 0 0 14px rgba(251, 191, 36, 0.4);
+  background: rgba(251, 191, 36, 0.12);
+}
+
+.seat-name {
+  font-weight: 700;
+  font-size: 12px;
+  color: #e2e8f0;
+  white-space: nowrap;
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.seat-stats {
+  display: flex;
+  gap: 6px;
+  font-size: 10px;
+  color: #94a3b8;
+  justify-content: center;
+  margin-top: 2px;
+}
+
+/* ─── Card Backs (face-down cards) ─── */
+.card-backs {
+  display: flex;
+  justify-content: center;
+  margin-top: 4px;
+}
+
+.card-back {
+  width: 24px;
+  height: 34px;
+  background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 50%, #1e3a5f 100%);
+  border: 1.5px solid #3b82f6;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.card-back-inner {
+  color: rgba(255, 255, 255, 0.3);
+  font-size: 12px;
+}
+
+/* ─── Cards played on the table ─── */
+.table-played-card {
+  width: 40px;
+  height: 56px;
+  background: white;
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  animation: cardDrop 0.3s ease;
+  border: 1px solid #d1d5db;
+}
+
+.table-played-card.red {
+  color: #dc2626;
+}
+
+.table-played-card.black {
+  color: #1e293b;
+}
+
+.tpc-rank {
+  font-size: 14px;
+  line-height: 1;
+}
+
+.tpc-suit {
+  font-size: 16px;
+  line-height: 1;
+}
+
+@keyframes cardDrop {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ─── Table Center ─── */
+.table-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+
+.my-played {
+  border: 2px solid var(--accent);
+}
+
+.trick-result-bubble {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(15, 23, 42, 0.95);
+  border: 2px solid var(--gold);
+  border-radius: 20px;
+  padding: 10px 24px;
+  white-space: nowrap;
+  animation: fadeIn 0.3s ease;
+  z-index: 20;
+}
+
+.trick-winner {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--gold);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ─── Round End Screen ─── */
+.round-end-screen {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.round-end-content {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 32px;
+  max-width: 500px;
+  width: 100%;
+  text-align: center;
+  animation: scaleIn 0.3s ease;
+}
+
+.round-end-content h2 {
+  font-size: 24px;
+  margin-bottom: 24px;
+}
+
+.round-scores {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.round-score-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  background: var(--bg-card);
+  border-radius: var(--radius-sm);
+}
+
+.round-score-item.positive .rs-score {
+  color: var(--success);
+}
+
+.round-score-item.negative .rs-score {
+  color: var(--danger);
+}
+
+.rs-name {
+  font-weight: 600;
+}
+
+.rs-score {
+  font-weight: 700;
+  font-size: 18px;
+}
+
+.rs-penalty {
+  font-size: 12px;
+  color: var(--danger);
+  font-weight: 700;
+}
+
+.current-standings {
+  margin-bottom: 24px;
+}
+
+.current-standings h3 {
+  margin-bottom: 12px;
+  font-size: 16px;
+  color: var(--text-secondary);
+}
+
+.standing-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px;
+  border-bottom: 1px solid rgba(45, 55, 72, 0.3);
+}
+
+.standing-rank {
+  font-weight: 700;
+  color: var(--text-secondary);
+  width: 30px;
+}
+
+.standing-name {
+  flex: 1;
+  font-weight: 600;
+  text-align: left;
+}
+
+.standing-score {
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.waiting-hint {
+  color: var(--text-secondary);
+  font-size: 14px;
+  margin-top: 16px;
+  font-style: italic;
+}
+
+/* ─── Game Over ─── */
+.game-over-screen {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.game-over-content {
+  text-align: center;
+  max-width: 600px;
+  width: 100%;
+}
+
+.game-over-content h1 {
+  font-size: 48px;
+  margin-bottom: 16px;
+  animation: bounce 0.5s ease;
+}
+
+@keyframes bounce {
+  0% { transform: scale(0.5); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+.winner-announcement {
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.1), rgba(245, 158, 11, 0.1));
+  border: 2px solid var(--gold);
+  border-radius: var(--radius);
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.winner-announcement h2 {
+  font-size: 32px;
+  color: var(--gold);
+  margin-bottom: 8px;
+}
+
+.winner-score {
+  font-size: 20px;
+  color: var(--text-secondary);
+}
+
+/* ─── Loading ─── */
+.loading {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  color: var(--text-secondary);
+}
+
+/* ─── Mobile ─── */
+@media (max-width: 600px) {
+  .game-top-bar {
+    flex-direction: column;
+    gap: 6px;
+    padding: 8px 12px;
+  }
+
+  .round-info {
+    gap: 6px;
+  }
+
+  .table-felt {
+    height: 320px;
+    border-width: 4px;
+  }
+
+  .seat-player {
+    min-width: 70px;
+    padding: 4px 6px;
+  }
+
+  .seat-name {
+    font-size: 10px;
+    max-width: 70px;
+  }
+
+  .seat-stats {
+    font-size: 9px;
+    gap: 4px;
+  }
+
+  .card-back {
+    width: 18px;
+    height: 26px;
+  }
+
+  .card-back-inner {
+    font-size: 9px;
+  }
+
+  .table-played-card {
+    width: 32px;
+    height: 44px;
+  }
+
+  .tpc-rank {
+    font-size: 11px;
+  }
+
+  .tpc-suit {
+    font-size: 13px;
+  }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}

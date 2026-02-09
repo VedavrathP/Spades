@@ -1,0 +1,186 @@
+/* ─── Lobby ─── */
+.lobby {
+  min-height: 100vh;
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 24px 20px;
+}
+
+.lobby-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.lobby-header h1 {
+  font-size: 28px;
+}
+
+.room-code-section {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.room-code-label {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.room-code-display {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--bg-card);
+  border: 2px solid var(--accent);
+  border-radius: var(--radius);
+  padding: 16px 32px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.room-code-display:hover {
+  background: var(--bg-card-hover);
+  transform: scale(1.02);
+}
+
+.room-code {
+  font-size: 36px;
+  font-weight: 800;
+  letter-spacing: 8px;
+  color: var(--accent);
+}
+
+.copy-icon {
+  font-size: 24px;
+}
+
+.room-code-hint {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-top: 8px;
+}
+
+.game-mode-section {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.game-mode-section h3 {
+  margin-bottom: 12px;
+  font-size: 16px;
+}
+
+.mode-badge {
+  color: var(--accent);
+  text-transform: capitalize;
+}
+
+.hint {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 8px;
+}
+
+.players-section {
+  margin-bottom: 16px;
+}
+
+.players-section h3 {
+  margin-bottom: 12px;
+  font-size: 16px;
+}
+
+.player-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.player-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px 16px;
+  transition: all 0.2s;
+}
+
+.player-card.ready {
+  border-color: var(--success);
+  background: rgba(34, 197, 94, 0.05);
+}
+
+.player-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.player-name {
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.host-badge {
+  background: var(--gold);
+  color: #000;
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 700;
+}
+
+.ready-status {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.ready-status.is-ready {
+  color: var(--success);
+  font-weight: 600;
+}
+
+.team-assign {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.team-badge {
+  font-size: 13px;
+  color: var(--accent);
+  margin-top: 6px;
+}
+
+.teams-config {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.teams-config h3 {
+  margin-bottom: 12px;
+  font-size: 16px;
+}
+
+.team-count-selector {
+  display: flex;
+  gap: 8px;
+}
+
+.lobby-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 24px;
+}
