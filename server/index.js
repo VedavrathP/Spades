@@ -130,9 +130,12 @@ function processEndOfTrick(roomCode) {
 
   gs.trickNumber++;
 
+  // Always save the latest trick winner (used for next round's first lead)
+  gs.lastTrickWinner = result.winnerId;
+
   // Check if round is over (all tricks played)
   if (gs.trickNumber >= gs.currentRound) {
-    // Round over — process scoring
+    // Round over — process scoring (lastTrickWinner carries over to next round)
     setTimeout(() => processEndOfRound(roomCode), 2000);
   } else {
     // Next trick — winner leads
@@ -403,6 +406,15 @@ io.on('connection', (socket) => {
 
     if (allDecided) {
       gs.phase = 'bidding';
+      // Start bidding from biddingStartIndex, but skip nil players
+      gs.currentPlayerIndex = gs.biddingStartIndex;
+      let safety = 0;
+      while (safety < gs.playerOrder.length) {
+        const p = gs.playerOrder[gs.currentPlayerIndex];
+        if (gs.nilBids[p] !== true) break; // found a non-nil player
+        gs.currentPlayerIndex = (gs.currentPlayerIndex + 1) % gs.playerOrder.length;
+        safety++;
+      }
     }
 
     broadcastGameState(roomCode);
@@ -421,10 +433,26 @@ io.on('connection', (socket) => {
     // Nil players already have their bid set
     if (gs.nilBids[playerName] === true) return;
 
+    // Enforce turn-by-turn bidding: only the current bidder can bid
+    if (gameEngine.getCurrentPlayer(gs) !== playerName) return;
+
     // Validate bid
     if (bid < 0 || bid > gs.currentRound) return;
 
     gs.bids[playerName] = bid;
+
+    // Advance to next player who hasn't bid yet (skip nil players who already have bids)
+    let next = (gs.currentPlayerIndex + 1) % gs.playerOrder.length;
+    let safety = 0;
+    while (safety < gs.playerOrder.length) {
+      const nextPlayer = gs.playerOrder[next];
+      if (gs.bids[nextPlayer] === undefined) {
+        break; // This player still needs to bid
+      }
+      next = (next + 1) % gs.playerOrder.length;
+      safety++;
+    }
+    gs.currentPlayerIndex = next;
 
     // Check if all non-nil players have bid
     const allBid = gs.playerOrder.every(p =>
@@ -435,6 +463,8 @@ io.on('connection', (socket) => {
       gs.phase = 'playing';
       gs.currentTrick = [];
       gs.trickNumber = 0;
+      // The first card lead goes to the last trick winner (or dealer+1 for round 1)
+      gs.currentPlayerIndex = gs.firstLeadIndex;
     }
 
     broadcastGameState(roomCode);

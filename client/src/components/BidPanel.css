@@ -15,6 +15,26 @@
   margin-bottom: 8px;
 }
 
+.bidding-turn-info {
+  margin-bottom: 16px;
+  font-size: 15px;
+}
+
+.your-turn-badge {
+  color: var(--gold);
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.bid-done-badge {
+  color: var(--success);
+  font-weight: 600;
+}
+
+.waiting-badge {
+  color: var(--text-secondary);
+}
+
 .bid-hint {
   color: var(--text-secondary);
   font-size: 14px;
@@ -88,6 +108,11 @@
 
 .bid-status-item.bid-done {
   border: 1px solid var(--success);
+}
+
+.bid-status-item.bidding-now {
+  border: 1px solid var(--gold);
+  background: rgba(251, 191, 36, 0.05);
 }
 
 .bid-player-name {

@@ -152,7 +152,7 @@ export default function GameBoard() {
         </div>
         <div className="phase-info">
           {gameState.phase === 'nil-prompt' && '🎯 Nil Decision'}
-          {gameState.phase === 'bidding' && '📝 Bidding'}
+          {gameState.phase === 'bidding' && (isMyTurn && gameState.bids?.[playerName] === undefined ? '📝 Your Bid!' : `📝 ${gameState.currentPlayer} is bidding`)}
           {gameState.phase === 'playing' && (isMyTurn ? '🃏 Your Turn!' : `Waiting for ${gameState.currentPlayer}`)}
         </div>
       </div>

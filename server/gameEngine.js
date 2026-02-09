@@ -235,6 +235,9 @@ function createGameState(players, gameMode, teams) {
     teamRoundHistory,
     gameMode,
     dealerIndex: 0,
+    biddingStartIndex: 0,
+    firstLeadIndex: 0,
+    lastTrickWinner: null,
     gameOver: false,
     winner: null
   };
@@ -244,6 +247,10 @@ function createGameState(players, gameMode, teams) {
  * Start a new round: deal cards, reset trick state.
  * For rounds 10-11, phase starts at 'nil-prompt'.
  * For rounds 1-9, phase starts at 'bidding'.
+ *
+ * Bidding rotates sequentially (dealer button style).
+ * First card lead goes to whoever won the last trick of the previous round.
+ * For round 1 (no previous winner), the player after the dealer leads.
  */
 function startRound(gameState) {
   const round = gameState.currentRound;
@@ -263,9 +270,21 @@ function startRound(gameState) {
     gameState.tricksWon[p] = 0;
   }
 
-  // Player to left of dealer leads
+  // Dealer rotates each round (bidding starts from dealer position going sequentially)
   gameState.dealerIndex = (round - 1) % players.length;
-  gameState.currentPlayerIndex = (gameState.dealerIndex + 1) % players.length;
+  // Bidding starts from the player after the dealer
+  gameState.biddingStartIndex = (gameState.dealerIndex + 1) % players.length;
+  gameState.currentPlayerIndex = gameState.biddingStartIndex;
+
+  // First card lead: last trick winner from previous round, or player after dealer for round 1
+  if (gameState.lastTrickWinner) {
+    gameState.firstLeadIndex = players.indexOf(gameState.lastTrickWinner);
+    if (gameState.firstLeadIndex === -1) {
+      gameState.firstLeadIndex = (gameState.dealerIndex + 1) % players.length;
+    }
+  } else {
+    gameState.firstLeadIndex = (gameState.dealerIndex + 1) % players.length;
+  }
 
   // Nil prompt only for rounds 10 and 11
   if (round >= 10) {
