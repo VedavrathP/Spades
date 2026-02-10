@@ -164,10 +164,11 @@ function processEndOfRound(roomCode) {
       const result = gameEngine.calculateRoundScore(bid, tricks, isNil);
       roundScores[playerName] = result.roundScore;
 
+      const previousScore = gs.scores[playerName];
       gs.scores[playerName] += result.roundScore;
 
-      // Check denominator penalty
-      const penaltyResult = gameEngine.applyDenominatorPenalty(gs.scores[playerName]);
+      // Check denominator penalty (crosses any x5 boundary)
+      const penaltyResult = gameEngine.applyDenominatorPenalty(previousScore, gs.scores[playerName]);
       if (penaltyResult.penaltyApplied) {
         gs.scores[playerName] = penaltyResult.newTotal;
         penalties[playerName] = true;
@@ -226,6 +227,7 @@ function processEndOfRound(roomCode) {
       }
 
       roundScores[teamName] = teamRoundScore;
+      const previousTeamScore = gs.teamScores[teamName];
       gs.teamScores[teamName] += teamRoundScore;
 
       // Also track individual scores for display
@@ -248,8 +250,8 @@ function processEndOfRound(roomCode) {
         }
       }
 
-      // Check denominator penalty for team
-      const penaltyResult = gameEngine.applyDenominatorPenalty(gs.teamScores[teamName]);
+      // Check denominator penalty for team (crosses any x5 boundary)
+      const penaltyResult = gameEngine.applyDenominatorPenalty(previousTeamScore, gs.teamScores[teamName]);
       if (penaltyResult.penaltyApplied) {
         gs.teamScores[teamName] = penaltyResult.newTotal;
         penalties[teamName] = true;

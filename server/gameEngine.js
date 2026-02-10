@@ -84,8 +84,9 @@ function determineTrickWinner(trick, ledSuit) {
 }
 
 /**
- * Compare if cardA beats cardB given the led suit.
+ * Compare if cardA (played later) beats cardB (played earlier) given the led suit.
  * Spades are trump.
+ * On exact tie (same suit & rank from double deck), later card wins.
  */
 function isCardBetter(cardA, cardB, ledSuit) {
   const aIsSpade = cardA.suit === 'spades';
@@ -97,17 +98,17 @@ function isCardBetter(cardA, cardB, ledSuit) {
   if (aIsSpade && !bIsSpade) return true;
   // If B is spade and A is not -> B wins (trump)
   if (bIsSpade && !aIsSpade) return false;
-  // Both spades -> higher value wins, tie goes to first played (B, so false)
+  // Both spades -> higher or equal value wins (later card wins ties)
   if (aIsSpade && bIsSpade) {
-    return cardA.value > cardB.value;
+    return cardA.value >= cardB.value;
   }
   // Neither is spade
   // If A follows led suit and B doesn't -> A wins
   if (aFollows && !bFollows) return true;
   // If B follows led suit and A doesn't -> B wins
   if (bFollows && !aFollows) return false;
-  // Both follow (or neither follows, which shouldn't happen with enforcement)
-  return cardA.value > cardB.value;
+  // Both follow same suit -> higher or equal value wins (later card wins ties)
+  return cardA.value >= cardB.value;
 }
 
 /**
@@ -172,21 +173,46 @@ function calculateRoundScore(bid, tricksWon, isNil) {
 
 /**
  * Check and apply the denominator penalty.
- * If total score ends in 5, deduct 55 points.
- * @param {number} totalScore - Current cumulative score
+ * If the score crosses or lands on any number ending in 5 (e.g. 5, 15, 25, ..., -5, -15, ...),
+ * deduct 55 points. "Crosses" means the previous score was below x5 and new score is at or above it.
+ *
+ * @param {number} previousScore - Score before this round
+ * @param {number} newScore - Score after adding this round's points
  * @returns {{ newTotal: number, penaltyApplied: boolean }}
  */
-function applyDenominatorPenalty(totalScore) {
-  // Get the last digit of the total score
-  const lastDigit = ((totalScore % 10) + 10) % 10; // handles negatives properly
-  if (lastDigit === 5) {
+function applyDenominatorPenalty(previousScore, newScore) {
+  // Find all x5 boundaries between previousScore and newScore
+  // A boundary is any integer ending in 5: ..., -15, -5, 5, 15, 25, 35, ...
+
+  if (previousScore === newScore) {
+    return { newTotal: newScore, penaltyApplied: false };
+  }
+
+  const low = Math.min(previousScore, newScore);
+  const high = Math.max(previousScore, newScore);
+
+  // Find the first x5 value that is > low and <= high
+  // Start from the nearest x5 above low
+  let firstX5 = Math.floor(low / 10) * 10 + 5;
+  if (firstX5 <= low) firstX5 += 10;
+
+  let crossed = false;
+  if (firstX5 <= high) {
+    crossed = true;
+  }
+
+  // Also check negative direction: if score decreased and crossed a negative x5
+  // The above logic handles both directions since we use low/high
+
+  if (crossed) {
     return {
-      newTotal: totalScore - 55,
+      newTotal: newScore - 55,
       penaltyApplied: true
     };
   }
+
   return {
-    newTotal: totalScore,
+    newTotal: newScore,
     penaltyApplied: false
   };
 }
