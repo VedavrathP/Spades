@@ -58,9 +58,14 @@ function joinRoom(roomCode, playerId, playerName) {
     // Check if reconnecting
     const existing = room.players.find(p => p.name === playerName);
     if (existing) {
+      const oldId = existing.id;
       existing.id = playerId;
       existing.connected = true;
-      return { room, reconnected: true, oldId: existing.id };
+      // Update host ID if this was the host
+      if (room.hostId === oldId) {
+        room.hostId = playerId;
+      }
+      return { room, reconnected: true, oldId };
     }
     return { error: 'Game already started' };
   }

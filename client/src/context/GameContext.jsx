@@ -8,14 +8,24 @@ const SOCKET_URL = import.meta.env.PROD ? '' : 'http://localhost:3001';
 export function GameProvider({ children }) {
   const socketRef = useRef(null);
   const [connected, setConnected] = useState(false);
-  const [playerName, setPlayerName] = useState('');
-  const [roomCode, setRoomCode] = useState('');
+  const [playerName, setPlayerName] = useState(() => sessionStorage.getItem('spades_playerName') || '');
+  const [roomCode, setRoomCode] = useState(() => sessionStorage.getItem('spades_roomCode') || '');
   const [roomState, setRoomState] = useState(null);
   const [gameState, setGameState] = useState(null);
-  const [screen, setScreen] = useState('home'); // home, lobby, game
+  const [screen, setScreen] = useState('home');
   const [error, setError] = useState('');
   const [trickResult, setTrickResult] = useState(null);
   const [roundEnd, setRoundEnd] = useState(null);
+  const hasAttemptedRejoin = useRef(false);
+
+  // Persist playerName and roomCode to sessionStorage
+  useEffect(() => {
+    if (playerName) sessionStorage.setItem('spades_playerName', playerName);
+  }, [playerName]);
+
+  useEffect(() => {
+    if (roomCode) sessionStorage.setItem('spades_roomCode', roomCode);
+  }, [roomCode]);
 
   useEffect(() => {
     // Prevent double-mount in StrictMode from creating multiple sockets
@@ -30,7 +40,31 @@ export function GameProvider({ children }) {
 
     socketRef.current = s;
 
-    s.on('connect', () => setConnected(true));
+    s.on('connect', () => {
+      setConnected(true);
+
+      // Auto-rejoin if we have saved session data (browser refresh)
+      const savedName = sessionStorage.getItem('spades_playerName');
+      const savedRoom = sessionStorage.getItem('spades_roomCode');
+
+      if (savedName && savedRoom && !hasAttemptedRejoin.current) {
+        hasAttemptedRejoin.current = true;
+        s.emit('join-room', { roomCode: savedRoom, playerName: savedName }, (response) => {
+          if (response.success) {
+            setPlayerName(savedName);
+            setRoomCode(response.roomCode);
+            setScreen('lobby'); // will switch to 'game' when game-state arrives
+            setError('');
+          } else {
+            // Session expired or room gone — clear saved data and go home
+            sessionStorage.removeItem('spades_playerName');
+            sessionStorage.removeItem('spades_roomCode');
+            setScreen('home');
+          }
+        });
+      }
+    });
+
     s.on('disconnect', () => setConnected(false));
 
     s.on('room-update', (data) => {
@@ -42,9 +76,7 @@ export function GameProvider({ children }) {
 
     s.on('game-state', (data) => {
       setGameState(data);
-      if (data.phase === 'game-over') {
-        setScreen('game');
-      }
+      setScreen('game');
     });
 
     s.on('trick-result', (data) => {
@@ -141,6 +173,8 @@ export function GameProvider({ children }) {
   }, [roomCode]);
 
   const leaveRoom = useCallback(() => {
+    sessionStorage.removeItem('spades_playerName');
+    sessionStorage.removeItem('spades_roomCode');
     setScreen('home');
     setRoomState(null);
     setGameState(null);
