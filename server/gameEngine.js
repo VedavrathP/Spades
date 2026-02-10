@@ -173,48 +173,51 @@ function calculateRoundScore(bid, tricksWon, isNil) {
 
 /**
  * Check and apply the denominator penalty.
- * If the score crosses or lands on any number ending in 5 (e.g. 5, 15, 25, ..., -5, -15, ...),
- * deduct 55 points. "Crosses" means the previous score was below x5 and new score is at or above it.
+ * 
+ * The penalty triggers when the total score's last digit is 5,
+ * OR when the round score causes the total to jump over a x5 boundary.
+ * Example: 54 + 22 = 76 — jumped over 55, 65, 75 → penalty → 76 - 55 = 21.
+ * 
+ * How we detect crossing: the previous score and new score are in different
+ * "5-groups". E.g. 54 is in group 50-54, 76 is in group 76-79. Between them
+ * lies at least one x5 (55). We check by seeing if Math.floor(prev/5) != Math.floor(new/5)
+ * when the score increased, meaning a x5 boundary was crossed.
  *
  * @param {number} previousScore - Score before this round
  * @param {number} newScore - Score after adding this round's points
  * @returns {{ newTotal: number, penaltyApplied: boolean }}
  */
 function applyDenominatorPenalty(previousScore, newScore) {
-  // Find all x5 boundaries between previousScore and newScore
-  // A boundary is any integer ending in 5: ..., -15, -5, 5, 15, 25, 35, ...
-
   if (previousScore === newScore) {
     return { newTotal: newScore, penaltyApplied: false };
   }
 
+  // Check: does the new score's last digit equal 5?
+  const lastDigit = ((newScore % 10) + 10) % 10;
+  if (lastDigit === 5) {
+    return { newTotal: newScore - 55, penaltyApplied: true };
+  }
+
+  // Check: did we jump over a x5?
+  // Only check crossing for scores that have been in the game long enough
+  // (both previous and new must be on the same side — both positive or involving
+  // meaningful totals, not just starting from 0)
+  // We look for any x5 strictly between previousScore and newScore.
   const low = Math.min(previousScore, newScore);
   const high = Math.max(previousScore, newScore);
 
-  // Find the first x5 value that is > low and <= high
-  // Start from the nearest x5 above low
-  let firstX5 = Math.floor(low / 10) * 10 + 5;
-  if (firstX5 <= low) firstX5 += 10;
+  // Find the nearest x5 that is strictly greater than low
+  let x5 = Math.floor(low / 10) * 10 + 5;
+  if (x5 <= low) x5 += 10;
 
-  let crossed = false;
-  if (firstX5 <= high) {
-    crossed = true;
+  // The x5 must be strictly between low and high (we already checked landing on 5)
+  // AND the x5 must be a "meaningful" boundary — both prev and new are positive
+  // and the previous score was already >= 10 (past the initial scoring phase)
+  if (x5 > low && x5 < high && previousScore >= 10) {
+    return { newTotal: newScore - 55, penaltyApplied: true };
   }
 
-  // Also check negative direction: if score decreased and crossed a negative x5
-  // The above logic handles both directions since we use low/high
-
-  if (crossed) {
-    return {
-      newTotal: newScore - 55,
-      penaltyApplied: true
-    };
-  }
-
-  return {
-    newTotal: newScore,
-    penaltyApplied: false
-  };
+  return { newTotal: newScore, penaltyApplied: false };
 }
 
 /**
