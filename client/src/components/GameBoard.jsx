@@ -62,7 +62,7 @@ function CardBacks({ count }) {
 
 export default function GameBoard() {
   const {
-    gameState, playerName, trickResult, roundEnd,
+    gameState, playerName, roomCode, trickResult, roundEnd,
     playCard, nextRound, roomState, error
   } = useGame();
   const [scoreExpanded, setScoreExpanded] = useState(false);
@@ -147,6 +147,7 @@ export default function GameBoard() {
       {/* Top bar */}
       <div className="game-top-bar">
         <div className="round-info">
+          <span className="room-code-badge" title="Share this code to let players rejoin">🔑 {roomCode}</span>
           <span className="round-badge">Round {gameState.currentRound}/11</span>
           <span className="trick-badge">Trick {gameState.trickNumber + 1}/{gameState.currentRound}</span>
         </div>

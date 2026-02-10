@@ -25,6 +25,17 @@
   gap: 10px;
 }
 
+.room-code-badge {
+  background: rgba(251, 191, 36, 0.15);
+  color: var(--gold);
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  cursor: default;
+}
+
 .round-badge {
   background: var(--accent);
   color: white;
