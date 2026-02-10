@@ -172,52 +172,30 @@ function calculateRoundScore(bid, tricksWon, isNil) {
 }
 
 /**
- * Check and apply the denominator penalty.
+ * Check and apply the denominator (sandbag) penalty.
  * 
- * The penalty triggers when the total score's last digit is 5,
- * OR when the round score causes the total to jump over a x5 boundary.
- * Example: 54 + 22 = 76 — jumped over 55, 65, 75 → penalty → 76 - 55 = 21.
- * 
- * How we detect crossing: the previous score and new score are in different
- * "5-groups". E.g. 54 is in group 50-54, 76 is in group 76-79. Between them
- * lies at least one x5 (55). We check by seeing if Math.floor(prev/5) != Math.floor(new/5)
- * when the score increased, meaning a x5 boundary was crossed.
+ * Tracks cumulative overtrick (extra) points per player/team.
+ * When accumulated extras reach 5 or more:
+ *   - Deduct 55 from total score
+ *   - Subtract 5 from the extras bag
  *
- * @param {number} previousScore - Score before this round
- * @param {number} newScore - Score after adding this round's points
- * @returns {{ newTotal: number, penaltyApplied: boolean }}
+ * @param {number} totalScore - Current total score (after adding round score)
+ * @param {number} currentBag - Current accumulated overtrick points
+ * @param {number} newOvertricks - Overtricks earned this round
+ * @returns {{ newTotal: number, newBag: number, penaltyApplied: boolean }}
  */
-function applyDenominatorPenalty(previousScore, newScore) {
-  if (previousScore === newScore) {
-    return { newTotal: newScore, penaltyApplied: false };
+function applyDenominatorPenalty(totalScore, currentBag, newOvertricks) {
+  let bag = currentBag + newOvertricks;
+  let score = totalScore;
+  let penaltyApplied = false;
+
+  if (bag >= 5) {
+    score -= 55;
+    bag -= 5;
+    penaltyApplied = true;
   }
 
-  // Check: does the new score's last digit equal 5?
-  const lastDigit = ((newScore % 10) + 10) % 10;
-  if (lastDigit === 5) {
-    return { newTotal: newScore - 55, penaltyApplied: true };
-  }
-
-  // Check: did we jump over a x5?
-  // Only check crossing for scores that have been in the game long enough
-  // (both previous and new must be on the same side — both positive or involving
-  // meaningful totals, not just starting from 0)
-  // We look for any x5 strictly between previousScore and newScore.
-  const low = Math.min(previousScore, newScore);
-  const high = Math.max(previousScore, newScore);
-
-  // Find the nearest x5 that is strictly greater than low
-  let x5 = Math.floor(low / 10) * 10 + 5;
-  if (x5 <= low) x5 += 10;
-
-  // The x5 must be strictly between low and high (we already checked landing on 5)
-  // AND the x5 must be a "meaningful" boundary — both prev and new are positive
-  // and the previous score was already >= 10 (past the initial scoring phase)
-  if (x5 > low && x5 < high && previousScore >= 10) {
-    return { newTotal: newScore - 55, penaltyApplied: true };
-  }
-
-  return { newTotal: newScore, penaltyApplied: false };
+  return { newTotal: score, newBag: bag, penaltyApplied };
 }
 
 /**
@@ -228,19 +206,24 @@ function createGameState(players, gameMode, teams) {
 
   const scores = {};
   const roundHistory = {};
+  const overtrickBag = {};
   for (const p of players) {
     scores[p] = 0;
     roundHistory[p] = [];
+    overtrickBag[p] = 0;
   }
 
   let teamScores = null;
   let teamRoundHistory = null;
+  let teamOvertrickBag = null;
   if (gameMode === 'teams' && teams) {
     teamScores = {};
     teamRoundHistory = {};
+    teamOvertrickBag = {};
     for (const teamName of Object.keys(teams)) {
       teamScores[teamName] = 0;
       teamRoundHistory[teamName] = [];
+      teamOvertrickBag[teamName] = 0;
     }
   }
 
@@ -258,9 +241,11 @@ function createGameState(players, gameMode, teams) {
     ledSuit: null,
     spadesBroken: false,
     scores,
+    overtrickBag,
     roundHistory,
     teams,
     teamScores,
+    teamOvertrickBag,
     teamRoundHistory,
     gameMode,
     dealerIndex: 0,

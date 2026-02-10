@@ -40,6 +40,7 @@ function IndividualScoreboard({ gameState }) {
           <tr>
             <th>Player</th>
             <th>Total</th>
+            <th>Bag</th>
             {gameState.roundHistory[gameState.playerOrder[0]]?.map((_, i) => (
               <th key={i}>R{i + 1}</th>
             ))}
@@ -50,13 +51,14 @@ function IndividualScoreboard({ gameState }) {
             <tr key={player} className={player === gameState.myName ? 'my-row' : ''}>
               <td className="player-name-cell">{player}</td>
               <td className="total-cell">{gameState.scores[player] || 0}</td>
+              <td className="bag-cell">{gameState.overtrickBag?.[player] || 0}</td>
               {gameState.roundHistory[player]?.map((rh, i) => (
                 <td key={i} className={`round-cell ${rh.penaltyApplied ? 'penalty' : ''} ${rh.roundScore >= 0 ? 'positive' : 'negative'}`}>
                   <div className="round-detail">
                     <span className="round-score">{rh.roundScore >= 0 ? '+' : ''}{rh.roundScore}</span>
                     <span className="round-bid-info">B:{rh.bid} W:{rh.tricks}</span>
                     {rh.isNil && <span className="nil-badge">NIL</span>}
-                    {rh.penaltyApplied && <span className="penalty-badge">-55!</span>}
+                    {rh.penaltyApplied && <span className="penalty-badge">-55! (bag≥5)</span>}
                   </div>
                 </td>
               ))}
@@ -80,6 +82,7 @@ function TeamScoreboard({ gameState }) {
           <tr>
             <th>Team</th>
             <th>Total</th>
+            <th>Bag</th>
             {gameState.teamRoundHistory[teamNames[0]]?.map((_, i) => (
               <th key={i}>R{i + 1}</th>
             ))}
@@ -93,11 +96,12 @@ function TeamScoreboard({ gameState }) {
                 <div className="team-members">{gameState.teams[team].join(', ')}</div>
               </td>
               <td className="total-cell">{gameState.teamScores[team] || 0}</td>
+              <td className="bag-cell">{gameState.teamOvertrickBag?.[team] || 0}</td>
               {gameState.teamRoundHistory[team]?.map((rh, i) => (
                 <td key={i} className={`round-cell ${rh.penaltyApplied ? 'penalty' : ''} ${rh.roundScore >= 0 ? 'positive' : 'negative'}`}>
                   <div className="round-detail">
                     <span className="round-score">{rh.roundScore >= 0 ? '+' : ''}{rh.roundScore}</span>
-                    {rh.penaltyApplied && <span className="penalty-badge">-55!</span>}
+                    {rh.penaltyApplied && <span className="penalty-badge">-55! (bag≥5)</span>}
                   </div>
                 </td>
               ))}

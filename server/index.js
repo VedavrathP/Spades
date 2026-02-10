@@ -79,9 +79,11 @@ function broadcastGameState(roomCode) {
       ledSuit: gs.ledSuit,
       spadesBroken: gs.spadesBroken,
       scores: gs.scores,
+      overtrickBag: gs.overtrickBag,
       roundHistory: gs.roundHistory,
       teams: gs.teams,
       teamScores: gs.teamScores,
+      teamOvertrickBag: gs.teamOvertrickBag,
       teamRoundHistory: gs.teamRoundHistory,
       gameMode: gs.gameMode,
       dealerIndex: gs.dealerIndex,
@@ -164,13 +166,17 @@ function processEndOfRound(roomCode) {
       const result = gameEngine.calculateRoundScore(bid, tricks, isNil);
       roundScores[playerName] = result.roundScore;
 
-      const previousScore = gs.scores[playerName];
       gs.scores[playerName] += result.roundScore;
 
-      // Check denominator penalty (crosses any x5 boundary)
-      const penaltyResult = gameEngine.applyDenominatorPenalty(previousScore, gs.scores[playerName]);
+      // Check denominator penalty (based on accumulated overtricks)
+      const penaltyResult = gameEngine.applyDenominatorPenalty(
+        gs.scores[playerName],
+        gs.overtrickBag[playerName] || 0,
+        result.overtricks
+      );
+      gs.scores[playerName] = penaltyResult.newTotal;
+      gs.overtrickBag[playerName] = penaltyResult.newBag;
       if (penaltyResult.penaltyApplied) {
-        gs.scores[playerName] = penaltyResult.newTotal;
         penalties[playerName] = true;
       }
 
@@ -180,6 +186,8 @@ function processEndOfRound(roomCode) {
         tricks,
         isNil,
         roundScore: result.roundScore,
+        overtricks: result.overtricks,
+        bagAfter: gs.overtrickBag[playerName],
         totalAfter: gs.scores[playerName],
         penaltyApplied: !!penalties[playerName]
       });
@@ -227,7 +235,6 @@ function processEndOfRound(roomCode) {
       }
 
       roundScores[teamName] = teamRoundScore;
-      const previousTeamScore = gs.teamScores[teamName];
       gs.teamScores[teamName] += teamRoundScore;
 
       // Also track individual scores for display
@@ -250,10 +257,15 @@ function processEndOfRound(roomCode) {
         }
       }
 
-      // Check denominator penalty for team (crosses any x5 boundary)
-      const penaltyResult = gameEngine.applyDenominatorPenalty(previousTeamScore, gs.teamScores[teamName]);
+      // Check denominator penalty for team (based on accumulated overtricks)
+      const penaltyResult = gameEngine.applyDenominatorPenalty(
+        gs.teamScores[teamName],
+        (gs.teamOvertrickBag && gs.teamOvertrickBag[teamName]) || 0,
+        teamResult.overtricks
+      );
+      gs.teamScores[teamName] = penaltyResult.newTotal;
+      if (gs.teamOvertrickBag) gs.teamOvertrickBag[teamName] = penaltyResult.newBag;
       if (penaltyResult.penaltyApplied) {
-        gs.teamScores[teamName] = penaltyResult.newTotal;
         penalties[teamName] = true;
       }
 
@@ -263,6 +275,8 @@ function processEndOfRound(roomCode) {
         bid: teamBid,
         tricks: teamTricks,
         roundScore: teamRoundScore,
+        overtricks: teamResult.overtricks,
+        bagAfter: gs.teamOvertrickBag ? gs.teamOvertrickBag[teamName] : 0,
         totalAfter: gs.teamScores[teamName],
         penaltyApplied: !!penalties[teamName]
       });

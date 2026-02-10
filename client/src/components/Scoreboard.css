@@ -96,6 +96,12 @@
   color: var(--accent);
 }
 
+.bag-cell {
+  font-weight: 600;
+  font-size: 14px;
+  color: #f59e0b;
+}
+
 .round-cell.positive {
   color: var(--success);
 }
