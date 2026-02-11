@@ -550,6 +550,76 @@ io.on('connection', (socket) => {
     broadcastGameState(roomCode);
   });
 
+  // ─── RESTART GAME (host only) ───
+
+  socket.on('restart-game', ({ roomCode }, callback) => {
+    const room = roomManager.getRoom(roomCode);
+    if (!room) {
+      callback && callback({ success: false, error: 'Room not found' });
+      return;
+    }
+    if (room.hostId !== socket.id) {
+      callback && callback({ success: false, error: 'Only the host can restart' });
+      return;
+    }
+
+    roomManager.resetRoom(roomCode);
+    io.to(roomCode).emit('game-reset', { message: 'Host has restarted the game' });
+    broadcastRoomState(roomCode);
+    callback && callback({ success: true });
+  });
+
+  // ─── END GAME (host only — destroys room) ───
+
+  socket.on('end-game', ({ roomCode }, callback) => {
+    const room = roomManager.getRoom(roomCode);
+    if (!room) {
+      callback && callback({ success: false, error: 'Room not found' });
+      return;
+    }
+    if (room.hostId !== socket.id) {
+      callback && callback({ success: false, error: 'Only the host can end the game' });
+      return;
+    }
+
+    // Notify all players before deleting
+    io.to(roomCode).emit('game-ended', { message: 'Host has ended the game' });
+
+    // Make all sockets leave the room
+    const sockets = io.sockets.adapter.rooms.get(roomCode);
+    if (sockets) {
+      for (const sid of sockets) {
+        const s = io.sockets.sockets.get(sid);
+        if (s) s.leave(roomCode);
+      }
+    }
+
+    roomManager.deleteRoom(roomCode);
+    callback && callback({ success: true });
+  });
+
+  // ─── LEAVE GAME (player leaves mid-game) ───
+
+  socket.on('leave-game', ({ roomCode }, callback) => {
+    const room = roomManager.getRoom(roomCode);
+    if (!room) {
+      callback && callback({ success: false, error: 'Room not found' });
+      return;
+    }
+
+    socket.leave(roomCode);
+    const updatedRoom = roomManager.removePlayerFromGame(roomCode, socket.id);
+
+    if (updatedRoom) {
+      broadcastRoomState(roomCode);
+      if (updatedRoom.gameState) {
+        broadcastGameState(roomCode);
+      }
+    }
+
+    callback && callback({ success: true });
+  });
+
   // ─── DISCONNECT ───
 
   socket.on('disconnect', () => {

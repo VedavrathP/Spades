@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useGame } from '../context/GameContext';
 import { getCardDisplay } from '../utils/cardUtils';
 import Hand from './Hand';
@@ -63,10 +63,14 @@ function CardBacks({ count }) {
 export default function GameBoard() {
   const {
     gameState, playerName, roomCode, trickResult, roundEnd,
-    playCard, nextRound, roomState, error
+    playCard, nextRound, roomState, error,
+    restartGame, endGame, leaveGame
   } = useGame();
   const [scoreExpanded, setScoreExpanded] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 600);
+  const [showMenu, setShowMenu] = useState(false);
+  const [confirmAction, setConfirmAction] = useState(null); // 'restart' | 'end' | 'leave'
+  const menuRef = useRef(null);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 600);
@@ -74,9 +78,31 @@ export default function GameBoard() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setShowMenu(false);
+        setConfirmAction(null);
+      }
+    };
+    if (showMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showMenu]);
+
   if (!gameState) return <div className="loading">Loading game...</div>;
 
   const isHost = roomState?.players?.find(p => p.name === playerName)?.id === roomState?.hostId;
+
+  const handleConfirmAction = () => {
+    if (confirmAction === 'restart') restartGame();
+    else if (confirmAction === 'end') endGame();
+    else if (confirmAction === 'leave') leaveGame();
+    setConfirmAction(null);
+    setShowMenu(false);
+  };
   const isMyTurn = gameState.currentPlayer === playerName;
   const myHand = gameState.hand || [];
 
@@ -91,6 +117,16 @@ export default function GameBoard() {
             <p className="winner-score">Final Score: {gameState.winner.score}</p>
           </div>
           <Scoreboard expanded={true} onToggle={() => {}} />
+          <div className="game-over-actions">
+            {isHost ? (
+              <>
+                <button className="btn btn-primary btn-lg" onClick={restartGame}>🔄 Play Again</button>
+                <button className="btn btn-outline btn-lg" onClick={endGame}>❌ End Game</button>
+              </>
+            ) : (
+              <button className="btn btn-outline btn-lg" onClick={leaveGame}>🚪 Leave</button>
+            )}
+          </div>
         </div>
       </div>
     );
@@ -162,6 +198,46 @@ export default function GameBoard() {
           {gameState.phase === 'nil-prompt' && '🎯 Nil Decision'}
           {gameState.phase === 'bidding' && (isMyTurn && gameState.bids?.[playerName] === undefined ? '📝 Your Bid!' : `📝 ${gameState.currentPlayer} is bidding`)}
           {gameState.phase === 'playing' && (isMyTurn ? '🃏 Your Turn!' : `Waiting for ${gameState.currentPlayer}`)}
+        </div>
+        <div className="game-menu-wrapper" ref={menuRef}>
+          <button className="btn-menu" onClick={() => { setShowMenu(!showMenu); setConfirmAction(null); }} title="Game Menu">
+            ☰
+          </button>
+          {showMenu && (
+            <div className="game-menu-dropdown">
+              {confirmAction ? (
+                <div className="confirm-action">
+                  <p className="confirm-text">
+                    {confirmAction === 'restart' && 'Restart game? All progress will be lost.'}
+                    {confirmAction === 'end' && 'End game? Room will be closed for everyone.'}
+                    {confirmAction === 'leave' && 'Leave game? You will lose your spot.'}
+                  </p>
+                  <div className="confirm-buttons">
+                    <button className="btn btn-danger btn-sm" onClick={handleConfirmAction}>Yes</button>
+                    <button className="btn btn-outline btn-sm" onClick={() => setConfirmAction(null)}>Cancel</button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {isHost && (
+                    <>
+                      <button className="menu-item" onClick={() => setConfirmAction('restart')}>
+                        🔄 Restart Game
+                      </button>
+                      <button className="menu-item menu-danger" onClick={() => setConfirmAction('end')}>
+                        ❌ End Game
+                      </button>
+                    </>
+                  )}
+                  {!isHost && (
+                    <button className="menu-item menu-danger" onClick={() => setConfirmAction('leave')}>
+                      🚪 Leave Game
+                    </button>
+                  )}
+                </>
+              )}
+            </div>
+          )}
         </div>
       </div>
 

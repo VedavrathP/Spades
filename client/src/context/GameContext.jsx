@@ -27,6 +27,19 @@ export function GameProvider({ children }) {
     if (roomCode) sessionStorage.setItem('spades_roomCode', roomCode);
   }, [roomCode]);
 
+  // Warn before page refresh/close when in a game
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (screen === 'game' || screen === 'lobby') {
+        e.preventDefault();
+        e.returnValue = 'You are in a game. Are you sure you want to leave?';
+        return e.returnValue;
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [screen]);
+
   useEffect(() => {
     // Prevent double-mount in StrictMode from creating multiple sockets
     if (socketRef.current) return;
@@ -91,6 +104,29 @@ export function GameProvider({ children }) {
     s.on('invalid-play', (data) => {
       setError(data.message);
       setTimeout(() => setError(''), 3000);
+    });
+
+    s.on('game-reset', () => {
+      // Host restarted the game — go back to lobby
+      setGameState(null);
+      setRoundEnd(null);
+      setTrickResult(null);
+      setScreen('lobby');
+    });
+
+    s.on('game-ended', () => {
+      // Host ended the game — go back to home
+      sessionStorage.removeItem('spades_playerName');
+      sessionStorage.removeItem('spades_roomCode');
+      setGameState(null);
+      setRoomState(null);
+      setRoundEnd(null);
+      setTrickResult(null);
+      setRoomCode('');
+      setPlayerName('');
+      setScreen('home');
+      setError('The host has ended the game.');
+      setTimeout(() => setError(''), 5000);
     });
 
     return () => {
@@ -183,6 +219,49 @@ export function GameProvider({ children }) {
     setTrickResult(null);
   }, []);
 
+  const restartGame = useCallback(() => {
+    if (!socketRef.current) return;
+    socketRef.current.emit('restart-game', { roomCode }, (response) => {
+      if (!response.success) {
+        setError(response.error || 'Failed to restart game');
+        setTimeout(() => setError(''), 3000);
+      }
+    });
+  }, [roomCode]);
+
+  const endGame = useCallback(() => {
+    if (!socketRef.current) return;
+    socketRef.current.emit('end-game', { roomCode }, (response) => {
+      if (response.success) {
+        sessionStorage.removeItem('spades_playerName');
+        sessionStorage.removeItem('spades_roomCode');
+        setGameState(null);
+        setRoomState(null);
+        setRoundEnd(null);
+        setTrickResult(null);
+        setRoomCode('');
+        setScreen('home');
+      } else {
+        setError(response.error || 'Failed to end game');
+        setTimeout(() => setError(''), 3000);
+      }
+    });
+  }, [roomCode]);
+
+  const leaveGame = useCallback(() => {
+    if (!socketRef.current) return;
+    socketRef.current.emit('leave-game', { roomCode }, (response) => {
+      sessionStorage.removeItem('spades_playerName');
+      sessionStorage.removeItem('spades_roomCode');
+      setGameState(null);
+      setRoomState(null);
+      setRoundEnd(null);
+      setTrickResult(null);
+      setRoomCode('');
+      setScreen('home');
+    });
+  }, [roomCode]);
+
   const value = {
     connected,
     playerName,
@@ -205,6 +284,9 @@ export function GameProvider({ children }) {
     playCard,
     nextRound,
     leaveRoom,
+    restartGame,
+    endGame,
+    leaveGame,
     setError,
     setScreen
   };

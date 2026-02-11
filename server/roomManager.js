@@ -231,6 +231,70 @@ function getPlayerTeam(room, playerName) {
   return null;
 }
 
+/**
+ * Reset a room back to lobby state (restart game).
+ */
+function resetRoom(roomCode) {
+  const room = rooms.get(roomCode);
+  if (!room) return null;
+  room.started = false;
+  room.gameState = null;
+  // Reset all players to not-ready
+  for (const p of room.players) {
+    p.ready = false;
+  }
+  return room;
+}
+
+/**
+ * Delete a room entirely (end game).
+ */
+function deleteRoom(roomCode) {
+  rooms.delete(roomCode);
+}
+
+/**
+ * Remove a player from a started game.
+ * Returns the room if it still exists, null if deleted.
+ */
+function removePlayerFromGame(roomCode, playerId) {
+  const room = rooms.get(roomCode);
+  if (!room) return null;
+
+  const player = room.players.find(p => p.id === playerId);
+  if (!player) return room;
+
+  const playerName = player.name;
+
+  // Remove from players list
+  room.players = room.players.filter(p => p.id !== playerId);
+
+  if (room.players.length === 0) {
+    rooms.delete(roomCode);
+    return null;
+  }
+
+  // Transfer host if needed
+  if (room.hostId === playerId) {
+    room.hostId = room.players[0].id;
+  }
+
+  // If game is in progress, remove from game state player order
+  if (room.gameState) {
+    const gs = room.gameState;
+    const idx = gs.playerOrder.indexOf(playerName);
+    if (idx !== -1) {
+      gs.playerOrder.splice(idx, 1);
+    }
+    // If it was this player's turn, advance
+    if (gs.currentPlayerIndex >= gs.playerOrder.length) {
+      gs.currentPlayerIndex = 0;
+    }
+  }
+
+  return room;
+}
+
 module.exports = {
   createRoom,
   joinRoom,
@@ -244,5 +308,8 @@ module.exports = {
   findPlayerRoom,
   getPlayerName,
   getPlayerTeam,
-  generateRoomCode
+  generateRoomCode,
+  resetRoom,
+  deleteRoom,
+  removePlayerFromGame
 };
