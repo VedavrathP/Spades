@@ -199,6 +199,13 @@
   overflow: visible;
 }
 
+/* ─── Opponents row wrapper ─── */
+/* On desktop: invisible wrapper, children are absolutely positioned */
+.opponents-row {
+  position: static;
+  display: contents; /* Children participate in table-felt layout directly */
+}
+
 /* ─── Seats around the table ─── */
 .table-seat {
   position: absolute;
@@ -382,10 +389,30 @@
   left: 50%;
   transform: translate(-50%, -50%);
   display: flex;
+  flex-wrap: wrap;
   gap: 10px;
   align-items: center;
   justify-content: center;
   z-index: 10;
+  min-width: 200px;
+}
+
+/* Trick card wrapper (played cards with labels) */
+.trick-card-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.trick-card-label {
+  font-size: 10px;
+  color: #94a3b8;
+  text-align: center;
+  white-space: nowrap;
+  max-width: 60px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Overlay for BidPanel / NilPrompt inside the table center */
@@ -422,16 +449,6 @@
   backdrop-filter: blur(8px);
   border-radius: 14px;
   padding: 18px 20px;
-}
-
-/* Mobile center area */
-.mobile-center-area {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 8px;
-  min-height: 120px;
 }
 
 .my-played {
@@ -660,44 +677,47 @@
     font-size: 12px;
   }
 
-  /* ─── Mobile: Replace ellipse table with a vertical layout ─── */
+  /* ─── Mobile: Compact green felt table ─── */
   .table {
-    padding: 6px;
-    align-items: flex-start;
+    padding: 4px;
+    align-items: stretch;
   }
 
   .table-felt {
-    /* Switch from ellipse to a rectangular card-table look */
+    /* Rounded rectangle instead of ellipse on mobile */
     border-radius: 20px;
     height: auto;
-    min-height: 280px;
-    padding: 10px 8px 60px;
+    min-height: 200px;
+    padding: 8px;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    gap: 8px;
+    overflow: visible;
+    position: relative;
   }
 
-  /* ─── Mobile: Opponents strip (scrollable horizontal) ─── */
-  .table-seat {
+  /* ─── Mobile: Opponents row becomes scrollable horizontal strip ─── */
+  .opponents-row {
+    display: flex !important;
+    overflow-x: auto;
+    gap: 6px;
+    padding: 4px 4px 6px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    flex-shrink: 0;
+  }
+
+  .opponents-row::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Override absolute positioning — seats flow in the row */
+  .opponents-row .table-seat {
     position: static !important;
     transform: none !important;
     flex-shrink: 0;
   }
 
-  .table-felt > .table-seat {
-    /* These are positioned absolutely on desktop; on mobile we use the opponents-strip */
-    display: none;
-  }
-
-  /* We'll use a wrapper in the JSX for mobile — but since we can't change JSX easily,
-     let's make the absolute-positioned seats flow naturally */
-  .table-felt {
-    position: relative;
-    overflow: visible;
-  }
-
-  /* ─── Mobile: Center area for played cards ─── */
+  /* ─── Mobile: Center area for played cards / bid / nil ─── */
   .table-center {
     position: relative;
     top: auto;
@@ -705,22 +725,43 @@
     transform: none;
     flex-wrap: wrap;
     gap: 6px;
-    padding: 8px;
-    min-height: 90px;
+    padding: 6px 4px;
+    min-height: 80px;
+    flex: 1;
+    min-width: unset;
   }
 
   .table-played-card {
-    width: 52px;
-    height: 74px;
+    width: 48px;
+    height: 68px;
     border-radius: 5px;
   }
 
   .tpc-rank {
-    font-size: 16px;
+    font-size: 15px;
   }
 
   .tpc-suit {
-    font-size: 18px;
+    font-size: 17px;
+  }
+
+  .trick-card-label {
+    font-size: 9px;
+  }
+
+  /* ─── Mobile: Overlay panels ─── */
+  .table-center-overlay {
+    max-width: 100%;
+  }
+
+  .table-center-overlay .bid-panel {
+    padding: 12px 10px;
+    font-size: 13px;
+  }
+
+  .table-center-overlay .nil-modal,
+  .table-center-overlay .nil-decided {
+    padding: 12px 10px;
   }
 
   /* ─── Mobile: Player seat cards ─── */
@@ -740,123 +781,29 @@
   }
 
   .card-back {
-    width: 22px;
-    height: 32px;
+    width: 20px;
+    height: 30px;
   }
 
   .card-back-inner {
-    font-size: 10px;
+    font-size: 9px;
   }
 
-  /* ─── Mobile: My seat at bottom ─── */
+  /* ─── Mobile: My seat at bottom of felt ─── */
   .seat-bottom {
     position: static !important;
     transform: none !important;
-  }
-}
-
-/* ═══════════════════════════════════════════
-   MOBILE OPPONENTS STRIP
-   (used when JSX renders mobile-specific layout)
-   ═══════════════════════════════════════════ */
-.mobile-opponents-strip {
-  display: none;
-}
-
-@media (max-width: 600px) {
-  .mobile-opponents-strip {
-    display: flex;
-    overflow-x: auto;
-    gap: 8px;
-    padding: 6px 8px;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
+    align-self: center;
+    padding-top: 4px;
   }
 
-  .mobile-opponents-strip::-webkit-scrollbar {
-    display: none;
-  }
-
-  .mobile-opponent {
-    flex-shrink: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
-  }
-
-  .mobile-opponent .seat-player {
-    min-width: auto;
-    padding: 5px 10px;
-  }
-
-  .mobile-opponent .table-played-card {
-    width: 48px;
-    height: 68px;
-  }
-
-  .mobile-opponent .tpc-rank {
-    font-size: 15px;
-  }
-
-  .mobile-opponent .tpc-suit {
-    font-size: 17px;
-  }
-
-  /* Hide the desktop table seats on mobile */
-  .desktop-only-seat {
-    display: none;
-  }
-
-  /* Mobile center trick area */
-  .mobile-trick-center {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 6px;
-    padding: 10px 4px;
-    min-height: 80px;
-    align-items: center;
-  }
-
-  .mobile-trick-center .table-played-card {
-    width: 52px;
-    height: 74px;
-  }
-
-  .mobile-trick-label {
-    font-size: 10px;
-    color: #94a3b8;
-    text-align: center;
-    margin-top: 2px;
-  }
-
-  .mobile-trick-card-wrapper {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
-
-  /* Mobile center area for all phases */
-  .mobile-center-area {
-    min-height: 100px;
-    padding: 4px;
-  }
-
-  .mobile-center-area .bid-panel {
-    max-width: 100%;
-    margin: 0;
-    padding: 14px 12px;
-    font-size: 13px;
-  }
-
-  .mobile-center-area .nil-prompt {
-    padding: 0;
-  }
-
-  .mobile-center-area .nil-modal {
-    padding: 16px 12px;
-    max-width: 100%;
+  /* Trick result bubble on mobile */
+  .trick-result-bubble {
+    position: relative;
+    top: auto;
+    left: auto;
+    transform: none;
+    margin-top: 4px;
   }
 }
 
