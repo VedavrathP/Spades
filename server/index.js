@@ -109,10 +109,122 @@ function advancePlayer(gs) {
   gs.currentPlayerIndex = (gs.currentPlayerIndex + 1) % gs.playerOrder.length;
 }
 
+// ─── Helper: skip disconnected players ───
+// If the current player is disconnected, auto-skip them.
+// For playing phase: auto-play their first valid card.
+// For bidding phase: auto-bid 0.
+// For nil-prompt phase: auto-decide "see cards" (no nil).
+function handleDisconnectedTurn(roomCode) {
+  const room = roomManager.getRoom(roomCode);
+  if (!room || !room.gameState) return;
+  const gs = room.gameState;
+  const currentPlayerName = gameEngine.getCurrentPlayer(gs);
+  if (!currentPlayerName) return;
+
+  const player = room.players.find(p => p.name === currentPlayerName);
+  if (!player || player.connected) return; // Player is connected, no need to skip
+
+  console.log(`[${roomCode}] Auto-handling disconnected player: ${currentPlayerName} (phase: ${gs.phase})`);
+
+  if (gs.phase === 'playing') {
+    // Auto-play their first valid card
+    const hand = gs.hands[currentPlayerName];
+    if (!hand || hand.length === 0) return;
+
+    const isLeading = gs.currentTrick.length === 0;
+    const ledSuit = isLeading ? null : gs.currentTrick[0].card.suit;
+
+    // Find a valid card to play
+    let cardToPlay = hand[0]; // default: first card
+    for (const card of hand) {
+      if (gameEngine.isValidPlay(card, hand, ledSuit, gs.spadesBroken, isLeading)) {
+        cardToPlay = card;
+        break;
+      }
+    }
+
+    // Play the card
+    if (isLeading) gs.ledSuit = cardToPlay.suit;
+    if (cardToPlay.suit === 'spades' && !gs.spadesBroken) gs.spadesBroken = true;
+    const cardIndex = hand.findIndex(c => c.id === cardToPlay.id);
+    hand.splice(cardIndex, 1);
+    gs.currentTrick.push({ playerId: currentPlayerName, card: cardToPlay });
+
+    if (gs.currentTrick.length === gs.playerOrder.length) {
+      broadcastGameState(roomCode);
+      setTimeout(() => processEndOfTrick(roomCode), 500);
+    } else {
+      advancePlayer(gs);
+      broadcastGameState(roomCode);
+      // Check if the next player is also disconnected
+      setTimeout(() => handleDisconnectedTurn(roomCode), 300);
+    }
+  } else if (gs.phase === 'bidding') {
+    // Auto-bid 0 for disconnected player
+    if (gs.nilBids[currentPlayerName] === true) return; // already nil
+    gs.bids[currentPlayerName] = 0;
+
+    // Advance to next bidder
+    let next = (gs.currentPlayerIndex + 1) % gs.playerOrder.length;
+    let safety = 0;
+    while (safety < gs.playerOrder.length) {
+      const nextPlayer = gs.playerOrder[next];
+      if (gs.bids[nextPlayer] === undefined) break;
+      next = (next + 1) % gs.playerOrder.length;
+      safety++;
+    }
+    gs.currentPlayerIndex = next;
+
+    const allBid = gs.playerOrder.every(p =>
+      gs.nilBids[p] === true || gs.bids[p] !== undefined
+    );
+
+    if (allBid) {
+      gs.phase = 'playing';
+      gs.currentTrick = [];
+      gs.trickNumber = 0;
+      gs.currentPlayerIndex = gs.firstLeadIndex;
+    }
+
+    broadcastGameState(roomCode);
+    // Check if next player is also disconnected
+    setTimeout(() => handleDisconnectedTurn(roomCode), 300);
+  } else if (gs.phase === 'nil-prompt') {
+    // Nil-prompt is simultaneous — auto-decide for ALL disconnected undecided players
+    for (const pName of gs.playerOrder) {
+      if (gs.nilBids[pName] !== undefined) continue; // already decided
+      const p = room.players.find(pl => pl.name === pName);
+      if (p && !p.connected) {
+        gs.nilBids[pName] = false; // auto: don't go nil
+        console.log(`[${roomCode}] Auto nil-decision for disconnected: ${pName} -> no nil`);
+      }
+    }
+
+    const allDecided = gs.playerOrder.every(p => gs.nilBids[p] === true || gs.nilBids[p] === false);
+    if (allDecided) {
+      gs.phase = 'bidding';
+      gs.currentPlayerIndex = gs.biddingStartIndex;
+      let safety = 0;
+      while (safety < gs.playerOrder.length) {
+        const p = gs.playerOrder[gs.currentPlayerIndex];
+        if (gs.nilBids[p] !== true) break;
+        gs.currentPlayerIndex = (gs.currentPlayerIndex + 1) % gs.playerOrder.length;
+        safety++;
+      }
+    }
+
+    broadcastGameState(roomCode);
+    // Check if next player to act is also disconnected
+    setTimeout(() => handleDisconnectedTurn(roomCode), 300);
+  }
+}
+
 // ─── Helper: process end of trick ───
 function processEndOfTrick(roomCode) {
   const room = roomManager.getRoom(roomCode);
+  if (!room || !room.gameState) return; // Guard against deleted rooms
   const gs = room.gameState;
+  if (!gs.currentTrick || gs.currentTrick.length === 0) return; // Guard
   const ledSuit = gs.currentTrick[0].card.suit;
   const result = gameEngine.determineTrickWinner(gs.currentTrick, ledSuit);
 
@@ -144,13 +256,18 @@ function processEndOfTrick(roomCode) {
     gs.currentTrick = [];
     gs.ledSuit = null;
     gs.currentPlayerIndex = gs.playerOrder.indexOf(result.winnerId);
-    setTimeout(() => broadcastGameState(roomCode), 1500);
+    setTimeout(() => {
+      broadcastGameState(roomCode);
+      // Check if the next player (trick winner) is disconnected
+      setTimeout(() => handleDisconnectedTurn(roomCode), 300);
+    }, 1500);
   }
 }
 
 // ─── Helper: process end of round ───
 function processEndOfRound(roomCode) {
   const room = roomManager.getRoom(roomCode);
+  if (!room || !room.gameState) return; // Guard against deleted rooms
   const gs = room.gameState;
 
   const roundScores = {};
@@ -399,6 +516,8 @@ io.on('connection', (socket) => {
 
     broadcastRoomState(roomCode);
     broadcastGameState(roomCode);
+    // Check if first player is disconnected
+    setTimeout(() => handleDisconnectedTurn(roomCode), 300);
   });
 
   // ─── NIL PROMPT (Rounds 10-11) ───
@@ -434,6 +553,8 @@ io.on('connection', (socket) => {
     }
 
     broadcastGameState(roomCode);
+    // Check if the next player to act is disconnected
+    setTimeout(() => handleDisconnectedTurn(roomCode), 300);
   });
 
   // ─── BIDDING ───
@@ -484,6 +605,8 @@ io.on('connection', (socket) => {
     }
 
     broadcastGameState(roomCode);
+    // Check if the next player to act is disconnected
+    setTimeout(() => handleDisconnectedTurn(roomCode), 300);
   });
 
   // ─── PLAY CARD ───
@@ -548,6 +671,8 @@ io.on('connection', (socket) => {
 
     gameEngine.startRound(room.gameState);
     broadcastGameState(roomCode);
+    // Check if first player is disconnected
+    setTimeout(() => handleDisconnectedTurn(roomCode), 300);
   });
 
   // ─── RESTART GAME (host only) ───
@@ -631,6 +756,9 @@ io.on('connection', (socket) => {
         broadcastRoomState(found.code);
         if (room.gameState) {
           broadcastGameState(found.code);
+          // If it was this player's turn, auto-handle after a short delay
+          // (give them a chance to reconnect quickly)
+          setTimeout(() => handleDisconnectedTurn(found.code), 5000);
         }
       }
     }
