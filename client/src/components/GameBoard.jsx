@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useGame } from '../context/GameContext';
 import { getCardDisplay } from '../utils/cardUtils';
 import Hand from './Hand';
@@ -66,6 +66,13 @@ export default function GameBoard() {
     playCard, nextRound, roomState, error
   } = useGame();
   const [scoreExpanded, setScoreExpanded] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 600);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 600);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   if (!gameState) return <div className="loading">Loading game...</div>;
 
@@ -179,54 +186,53 @@ export default function GameBoard() {
       {/* ─── TABLE VIEW (playing phase) ─── */}
       {gameState.phase === 'playing' && (
         <div className="table-container">
-          <div className="table">
-            {/* Felt surface */}
-            <div className="table-felt">
+          {isMobile ? (
+            /* ═══ MOBILE LAYOUT ═══ */
+            <>
+              {/* Scrollable opponents strip */}
+              <div className="mobile-opponents-strip">
+                {otherPlayers.map(name => {
+                  const isActive = gameState.currentPlayer === name;
+                  const cardPlayed = trickCardByPlayer[name];
+                  const cardDisplay = cardPlayed ? getCardDisplay(cardPlayed) : null;
+                  const cardCount = gameState.otherHandCounts[name] || 0;
 
-              {/* Other players seated around the table */}
-              {seatedPlayers.map(({ name, position }) => {
-                const isActive = gameState.currentPlayer === name;
-                const cardPlayed = trickCardByPlayer[name];
-                const cardDisplay = cardPlayed ? getCardDisplay(cardPlayed) : null;
-                const cardCount = gameState.otherHandCounts[name] || 0;
-
-                return (
-                  <div key={name} className={`table-seat seat-${position}`}>
-                    {/* Player info */}
-                    <div className={`seat-player ${isActive ? 'active-turn' : ''}`}>
-                      <div className="seat-name">{name}</div>
-                      <div className="seat-stats">
-                        <span>B:{gameState.nilBids[name] ? 'NIL' : gameState.bids[name]}</span>
-                        <span>W:{gameState.tricksWon[name] || 0}</span>
-                      </div>
-                      <CardBacks count={cardCount} />
-                    </div>
-
-                    {/* Card thrown on table */}
-                    {cardDisplay && (
-                      <div className={`table-played-card ${cardDisplay.color === '#e74c3c' ? 'red' : 'black'}`}>
-                        <span className="tpc-rank">{cardDisplay.rank}</span>
-                        <span className="tpc-suit">{cardDisplay.symbol}</span>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-
-              {/* Center trick area */}
-              <div className="table-center">
-                {/* My played card (if any) */}
-                {trickCardByPlayer[playerName] && (() => {
-                  const d = getCardDisplay(trickCardByPlayer[playerName]);
                   return (
-                    <div className={`table-played-card my-played ${d.color === '#e74c3c' ? 'red' : 'black'}`}>
-                      <span className="tpc-rank">{d.rank}</span>
-                      <span className="tpc-suit">{d.symbol}</span>
+                    <div key={name} className="mobile-opponent">
+                      <div className={`seat-player ${isActive ? 'active-turn' : ''}`}>
+                        <div className="seat-name">{name}</div>
+                        <div className="seat-stats">
+                          <span>B:{gameState.nilBids[name] ? 'NIL' : gameState.bids[name]}</span>
+                          <span>W:{gameState.tricksWon[name] || 0}</span>
+                        </div>
+                        <CardBacks count={cardCount} />
+                      </div>
+                      {cardDisplay && (
+                        <div className={`table-played-card ${cardDisplay.color === '#e74c3c' ? 'red' : 'black'}`}>
+                          <span className="tpc-rank">{cardDisplay.rank}</span>
+                          <span className="tpc-suit">{cardDisplay.symbol}</span>
+                        </div>
+                      )}
                     </div>
                   );
-                })()}
+                })}
+              </div>
 
-                {/* Trick Result overlay */}
+              {/* Center trick area — all played cards */}
+              <div className="mobile-trick-center">
+                {gameState.currentTrick.map((play, i) => {
+                  const d = getCardDisplay(play.card);
+                  return (
+                    <div key={i} className="mobile-trick-card-wrapper">
+                      <div className={`table-played-card ${play.playerId === playerName ? 'my-played' : ''} ${d.color === '#e74c3c' ? 'red' : 'black'}`}>
+                        <span className="tpc-rank">{d.rank}</span>
+                        <span className="tpc-suit">{d.symbol}</span>
+                      </div>
+                      <span className="mobile-trick-label">{play.playerId === playerName ? 'You' : play.playerId}</span>
+                    </div>
+                  );
+                })}
+
                 {trickResult && (
                   <div className="trick-result-bubble">
                     <span className="trick-winner">{trickResult.winner} wins!</span>
@@ -234,19 +240,78 @@ export default function GameBoard() {
                 )}
               </div>
 
-              {/* My seat at the bottom */}
-              <div className="table-seat seat-bottom">
-                <div className={`seat-player my-seat ${isMyTurn ? 'active-turn' : ''}`}>
-                  <div className="seat-name">{playerName} (You)</div>
-                  <div className="seat-stats">
-                    <span>Bid: {gameState.nilBids[playerName] ? 'NIL' : gameState.bids[playerName]}</span>
-                    <span>Won: {gameState.tricksWon[playerName] || 0}</span>
-                    <span>Score: {gameState.scores[playerName] || 0}</span>
+              {/* My info bar */}
+              <div className={`seat-player my-seat ${isMyTurn ? 'active-turn' : ''}`} style={{ margin: '0 auto', width: 'fit-content' }}>
+                <div className="seat-name">{playerName} (You)</div>
+                <div className="seat-stats">
+                  <span>Bid: {gameState.nilBids[playerName] ? 'NIL' : gameState.bids[playerName]}</span>
+                  <span>Won: {gameState.tricksWon[playerName] || 0}</span>
+                  <span>Score: {gameState.scores[playerName] || 0}</span>
+                </div>
+              </div>
+            </>
+          ) : (
+            /* ═══ DESKTOP LAYOUT ═══ */
+            <div className="table">
+              <div className="table-felt">
+                {seatedPlayers.map(({ name, position }) => {
+                  const isActive = gameState.currentPlayer === name;
+                  const cardPlayed = trickCardByPlayer[name];
+                  const cardDisplay = cardPlayed ? getCardDisplay(cardPlayed) : null;
+                  const cardCount = gameState.otherHandCounts[name] || 0;
+
+                  return (
+                    <div key={name} className={`table-seat seat-${position}`}>
+                      <div className={`seat-player ${isActive ? 'active-turn' : ''}`}>
+                        <div className="seat-name">{name}</div>
+                        <div className="seat-stats">
+                          <span>B:{gameState.nilBids[name] ? 'NIL' : gameState.bids[name]}</span>
+                          <span>W:{gameState.tricksWon[name] || 0}</span>
+                        </div>
+                        <CardBacks count={cardCount} />
+                      </div>
+
+                      {cardDisplay && (
+                        <div className={`table-played-card ${cardDisplay.color === '#e74c3c' ? 'red' : 'black'}`}>
+                          <span className="tpc-rank">{cardDisplay.rank}</span>
+                          <span className="tpc-suit">{cardDisplay.symbol}</span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+
+                <div className="table-center">
+                  {trickCardByPlayer[playerName] && (() => {
+                    const d = getCardDisplay(trickCardByPlayer[playerName]);
+                    return (
+                      <div className={`table-played-card my-played ${d.color === '#e74c3c' ? 'red' : 'black'}`}>
+                        <span className="tpc-rank">{d.rank}</span>
+                        <span className="tpc-suit">{d.symbol}</span>
+                      </div>
+                    );
+                  })()}
+
+                  {trickResult && (
+                    <div className="trick-result-bubble">
+                      <span className="trick-winner">{trickResult.winner} wins!</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="table-seat seat-bottom">
+                  <div className={`seat-player my-seat ${isMyTurn ? 'active-turn' : ''}`}>
+                    <div className="seat-name">{playerName} (You)</div>
+                    <div className="seat-stats">
+                      <span>Bid: {gameState.nilBids[playerName] ? 'NIL' : gameState.bids[playerName]}</span>
+                      <span>Won: {gameState.tricksWon[playerName] || 0}</span>
+                      <span>Score: {gameState.scores[playerName] || 0}</span>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
+          )}
 
           {/* My Hand */}
           <Hand

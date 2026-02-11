@@ -13,7 +13,7 @@
   align-items: flex-end;
   position: relative;
   padding: 0 40px;
-  min-height: 130px;
+  min-height: 150px;
 }
 
 .hand-rows .hand-row {
@@ -22,15 +22,15 @@
 
 /* ─── Card ─── */
 .card {
-  width: 80px;
-  height: 120px;
+  width: 90px;
+  height: 130px;
   background: var(--card-bg);
-  border-radius: 8px;
+  border-radius: 10px;
   box-shadow: var(--card-shadow);
   position: relative;
   cursor: default;
   transition: all 0.2s ease;
-  margin-left: -20px;
+  margin-left: -22px;
   flex-shrink: 0;
   user-select: none;
 }
@@ -40,7 +40,7 @@
 }
 
 .hand-rows .card {
-  margin-left: -14px;
+  margin-left: -16px;
 }
 
 .hand-rows .card:first-child {
@@ -78,23 +78,23 @@
 }
 
 .card-corner.top-left {
-  top: 6px;
-  left: 6px;
+  top: 7px;
+  left: 7px;
 }
 
 .card-corner.bottom-right {
-  bottom: 6px;
-  right: 6px;
+  bottom: 7px;
+  right: 7px;
   transform: rotate(180deg);
 }
 
 .card-rank {
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 800;
 }
 
 .card-suit {
-  font-size: 12px;
+  font-size: 14px;
 }
 
 .card-center {
@@ -105,13 +105,13 @@
 }
 
 .card-suit-large {
-  font-size: 32px;
+  font-size: 36px;
 }
 
 /* ─── Trick Card ─── */
 .trick-card {
-  width: 70px;
-  height: 105px;
+  width: 80px;
+  height: 115px;
   margin-left: 0;
   animation: playCard 0.3s ease;
 }
@@ -130,13 +130,14 @@
 /* ─── Mobile ─── */
 @media (max-width: 600px) {
   .hand-container {
-    padding: 6px 8px 14px;
+    padding: 6px 4px 14px;
     gap: 6px;
   }
 
   .hand-row {
-    padding: 0 10px;
-    min-height: 100px;
+    padding: 0 6px;
+    min-height: 110px;
+    flex-wrap: nowrap;
   }
 
   .hand-rows .hand-row {
@@ -144,36 +145,36 @@
   }
 
   .card {
-    width: 52px;
-    height: 78px;
-    margin-left: -12px;
-    border-radius: 6px;
+    width: 64px;
+    height: 94px;
+    margin-left: -16px;
+    border-radius: 7px;
   }
 
   .hand-rows .card {
-    margin-left: -10px;
+    margin-left: -14px;
   }
 
   .card-rank {
-    font-size: 10px;
+    font-size: 13px;
   }
 
   .card-suit {
-    font-size: 9px;
+    font-size: 11px;
   }
 
   .card-suit-large {
-    font-size: 20px;
+    font-size: 24px;
   }
 
   .card-corner.top-left {
-    top: 3px;
-    left: 3px;
+    top: 4px;
+    left: 4px;
   }
 
   .card-corner.bottom-right {
-    bottom: 3px;
-    right: 3px;
+    bottom: 4px;
+    right: 4px;
   }
 
   .card.playable:hover {
@@ -181,7 +182,7 @@
   }
 
   .trick-card {
-    width: 55px;
-    height: 82px;
+    width: 64px;
+    height: 94px;
   }
 }

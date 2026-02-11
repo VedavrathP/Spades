@@ -80,7 +80,7 @@
 }
 
 /* ═══════════════════════════════════════════
-   TABLE LAYOUT
+   TABLE LAYOUT — DESKTOP
    ═══════════════════════════════════════════ */
 
 .table-container {
@@ -100,8 +100,8 @@
 .table-felt {
   position: relative;
   width: 100%;
-  max-width: 700px;
-  height: 420px;
+  max-width: 750px;
+  height: 450px;
   background: radial-gradient(ellipse at center, #1a5c2e 0%, #0f3d1e 60%, #0a2914 100%);
   border-radius: 50% / 45%;
   border: 6px solid #3a2a1a;
@@ -124,7 +124,7 @@
 
 /* Position seats around the ellipse */
 .seat-top {
-  top: -30px;
+  top: -35px;
   left: 50%;
   transform: translateX(-50%);
 }
@@ -166,7 +166,7 @@
 }
 
 .seat-bottom {
-  bottom: -35px;
+  bottom: -40px;
   left: 50%;
   transform: translateX(-50%);
 }
@@ -176,9 +176,9 @@
   background: rgba(15, 23, 42, 0.9);
   border: 2px solid rgba(100, 116, 139, 0.4);
   border-radius: 10px;
-  padding: 6px 10px;
+  padding: 8px 12px;
   text-align: center;
-  min-width: 90px;
+  min-width: 100px;
   backdrop-filter: blur(4px);
   transition: all 0.3s ease;
 }
@@ -202,10 +202,10 @@
 
 .seat-name {
   font-weight: 700;
-  font-size: 12px;
+  font-size: 13px;
   color: #e2e8f0;
   white-space: nowrap;
-  max-width: 100px;
+  max-width: 110px;
   overflow: hidden;
   text-overflow: ellipsis;
 }
@@ -213,7 +213,7 @@
 .seat-stats {
   display: flex;
   gap: 6px;
-  font-size: 10px;
+  font-size: 11px;
   color: #94a3b8;
   justify-content: center;
   margin-top: 2px;
@@ -227,11 +227,11 @@
 }
 
 .card-back {
-  width: 24px;
-  height: 34px;
+  width: 28px;
+  height: 40px;
   background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 50%, #1e3a5f 100%);
   border: 1.5px solid #3b82f6;
-  border-radius: 3px;
+  border-radius: 4px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -240,23 +240,23 @@
 
 .card-back-inner {
   color: rgba(255, 255, 255, 0.3);
-  font-size: 12px;
+  font-size: 14px;
 }
 
 /* ─── Cards played on the table ─── */
 .table-played-card {
-  width: 40px;
-  height: 56px;
+  width: 56px;
+  height: 80px;
   background: white;
-  border-radius: 4px;
+  border-radius: 6px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   font-weight: 700;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
   animation: cardDrop 0.3s ease;
-  border: 1px solid #d1d5db;
+  border: 1.5px solid #d1d5db;
 }
 
 .table-played-card.red {
@@ -268,12 +268,12 @@
 }
 
 .tpc-rank {
-  font-size: 14px;
+  font-size: 18px;
   line-height: 1;
 }
 
 .tpc-suit {
-  font-size: 16px;
+  font-size: 22px;
   line-height: 1;
 }
 
@@ -295,7 +295,7 @@
   left: 50%;
   transform: translate(-50%, -50%);
   display: flex;
-  gap: 8px;
+  gap: 10px;
   align-items: center;
   justify-content: center;
   z-index: 10;
@@ -492,31 +492,105 @@
   color: var(--text-secondary);
 }
 
-/* ─── Mobile ─── */
+/* ═══════════════════════════════════════════
+   MOBILE LAYOUT
+   ═══════════════════════════════════════════ */
 @media (max-width: 600px) {
   .game-top-bar {
     flex-direction: column;
-    gap: 6px;
-    padding: 8px 12px;
+    gap: 4px;
+    padding: 6px 10px;
   }
 
   .round-info {
     gap: 6px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .room-code-badge,
+  .round-badge,
+  .trick-badge {
+    font-size: 11px;
+    padding: 3px 8px;
+  }
+
+  .phase-info {
+    font-size: 12px;
+  }
+
+  /* ─── Mobile: Replace ellipse table with a vertical layout ─── */
+  .table {
+    padding: 6px;
+    align-items: flex-start;
   }
 
   .table-felt {
-    height: 320px;
-    border-width: 4px;
+    /* Switch from ellipse to a rectangular card-table look */
+    border-radius: 20px;
+    height: auto;
+    min-height: 280px;
+    padding: 10px 8px 60px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
   }
 
+  /* ─── Mobile: Opponents strip (scrollable horizontal) ─── */
+  .table-seat {
+    position: static !important;
+    transform: none !important;
+    flex-shrink: 0;
+  }
+
+  .table-felt > .table-seat {
+    /* These are positioned absolutely on desktop; on mobile we use the opponents-strip */
+    display: none;
+  }
+
+  /* We'll use a wrapper in the JSX for mobile — but since we can't change JSX easily,
+     let's make the absolute-positioned seats flow naturally */
+  .table-felt {
+    position: relative;
+    overflow: visible;
+  }
+
+  /* ─── Mobile: Center area for played cards ─── */
+  .table-center {
+    position: relative;
+    top: auto;
+    left: auto;
+    transform: none;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 8px;
+    min-height: 90px;
+  }
+
+  .table-played-card {
+    width: 52px;
+    height: 74px;
+    border-radius: 5px;
+  }
+
+  .tpc-rank {
+    font-size: 16px;
+  }
+
+  .tpc-suit {
+    font-size: 18px;
+  }
+
+  /* ─── Mobile: Player seat cards ─── */
   .seat-player {
-    min-width: 70px;
-    padding: 4px 6px;
+    min-width: auto;
+    padding: 4px 8px;
   }
 
   .seat-name {
-    font-size: 10px;
-    max-width: 70px;
+    font-size: 11px;
+    max-width: 80px;
   }
 
   .seat-stats {
@@ -525,25 +599,101 @@
   }
 
   .card-back {
-    width: 18px;
-    height: 26px;
+    width: 22px;
+    height: 32px;
   }
 
   .card-back-inner {
-    font-size: 9px;
+    font-size: 10px;
   }
 
-  .table-played-card {
-    width: 32px;
-    height: 44px;
+  /* ─── Mobile: My seat at bottom ─── */
+  .seat-bottom {
+    position: static !important;
+    transform: none !important;
+  }
+}
+
+/* ═══════════════════════════════════════════
+   MOBILE OPPONENTS STRIP
+   (used when JSX renders mobile-specific layout)
+   ═══════════════════════════════════════════ */
+.mobile-opponents-strip {
+  display: none;
+}
+
+@media (max-width: 600px) {
+  .mobile-opponents-strip {
+    display: flex;
+    overflow-x: auto;
+    gap: 8px;
+    padding: 6px 8px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
   }
 
-  .tpc-rank {
-    font-size: 11px;
+  .mobile-opponents-strip::-webkit-scrollbar {
+    display: none;
   }
 
-  .tpc-suit {
-    font-size: 13px;
+  .mobile-opponent {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .mobile-opponent .seat-player {
+    min-width: auto;
+    padding: 5px 10px;
+  }
+
+  .mobile-opponent .table-played-card {
+    width: 48px;
+    height: 68px;
+  }
+
+  .mobile-opponent .tpc-rank {
+    font-size: 15px;
+  }
+
+  .mobile-opponent .tpc-suit {
+    font-size: 17px;
+  }
+
+  /* Hide the desktop table seats on mobile */
+  .desktop-only-seat {
+    display: none;
+  }
+
+  /* Mobile center trick area */
+  .mobile-trick-center {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px;
+    padding: 10px 4px;
+    min-height: 80px;
+    align-items: center;
+  }
+
+  .mobile-trick-center .table-played-card {
+    width: 52px;
+    height: 74px;
+  }
+
+  .mobile-trick-label {
+    font-size: 10px;
+    color: #94a3b8;
+    text-align: center;
+    margin-top: 2px;
+  }
+
+  .mobile-trick-card-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
   }
 }
 
