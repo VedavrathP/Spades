@@ -1,10 +1,11 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useGame } from '../context/GameContext';
 import { getCardDisplay } from '../utils/cardUtils';
 import Hand from './Hand';
 import BidPanel from './BidPanel';
 import NilPrompt from './NilPrompt';
 import Scoreboard from './Scoreboard';
+import DealingAnimation from './DealingAnimation';
 import './GameBoard.css';
 
 /**
@@ -70,12 +71,34 @@ export default function GameBoard() {
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 600);
   const [showMenu, setShowMenu] = useState(false);
   const [confirmAction, setConfirmAction] = useState(null); // 'restart' | 'end' | 'leave'
+  const [isDealing, setIsDealing] = useState(false);
+  const lastSeenRound = useRef(null);
   const menuRef = useRef(null);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 600);
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Detect new round → trigger dealing animation
+  useEffect(() => {
+    if (!gameState) return;
+    const round = gameState.currentRound;
+    const phase = gameState.phase;
+    // Only trigger on a fresh round (bidding or nil-prompt with trickNumber 0)
+    if (
+      round !== lastSeenRound.current &&
+      (phase === 'bidding' || phase === 'nil-prompt') &&
+      gameState.trickNumber === 0
+    ) {
+      lastSeenRound.current = round;
+      setIsDealing(true);
+    }
+  }, [gameState]);
+
+  const handleDealingComplete = useCallback(() => {
+    setIsDealing(false);
   }, []);
 
   // Close menu when clicking outside
@@ -243,11 +266,24 @@ export default function GameBoard() {
 
       {error && <div className="game-error">{error}</div>}
 
+      {/* Dealing Animation */}
+      {isDealing && (
+        <DealingAnimation
+          playerOrder={gameState.playerOrder}
+          playerName={playerName}
+          cardsPerRound={gameState.currentRound}
+          myCards={myHand}
+          dealerIndex={gameState.dealerIndex}
+          onComplete={handleDealingComplete}
+          isMobile={isMobile}
+        />
+      )}
+
       {/* Nil Prompt */}
-      {gameState.phase === 'nil-prompt' && <NilPrompt />}
+      {!isDealing && gameState.phase === 'nil-prompt' && <NilPrompt />}
 
       {/* Bid Panel + Hand visible during bidding */}
-      {gameState.phase === 'bidding' && (
+      {!isDealing && gameState.phase === 'bidding' && (
         <div className="bidding-area">
           <BidPanel />
           <Hand

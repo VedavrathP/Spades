@@ -1,0 +1,348 @@
+/* ═══════════════════════════════════════════
+   DEALING ANIMATION
+   ═══════════════════════════════════════════ */
+
+.dealing-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(10, 15, 25, 0.95);
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+}
+
+/* ─── Table ─── */
+.dealing-table {
+  position: relative;
+  width: 90%;
+  max-width: 700px;
+  height: 420px;
+  background: radial-gradient(ellipse at center, #1a5c2e 0%, #0f3d1e 60%, #0a2914 100%);
+  border-radius: 50% / 45%;
+  border: 6px solid #3a2a1a;
+  box-shadow:
+    inset 0 0 60px rgba(0, 0, 0, 0.4),
+    0 4px 20px rgba(0, 0, 0, 0.5),
+    0 0 0 3px #5a4030;
+}
+
+/* ─── Seat labels ─── */
+.dealing-seat {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 5;
+}
+
+.dealing-seat-name {
+  background: rgba(15, 23, 42, 0.9);
+  border: 2px solid rgba(100, 116, 139, 0.4);
+  border-radius: 10px;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #e2e8f0;
+  white-space: nowrap;
+}
+
+.dealing-seat-me .dealing-seat-name {
+  border-color: #6366f1;
+  background: rgba(99, 102, 241, 0.12);
+}
+
+/* Seat positions (same as GameBoard) */
+.dealing-seat-top {
+  top: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.dealing-seat-top-left {
+  top: 20px;
+  left: 12%;
+  transform: translateX(-50%);
+}
+
+.dealing-seat-top-right {
+  top: 20px;
+  left: 88%;
+  transform: translateX(-50%);
+}
+
+.dealing-seat-left {
+  top: 50%;
+  left: -10px;
+  transform: translate(-50%, -50%);
+}
+
+.dealing-seat-right {
+  top: 50%;
+  right: -10px;
+  transform: translate(50%, -50%);
+}
+
+.dealing-seat-bottom-left {
+  bottom: 20px;
+  left: 15%;
+  transform: translateX(-50%);
+}
+
+.dealing-seat-bottom-right {
+  bottom: 20px;
+  right: 15%;
+  transform: translateX(50%);
+}
+
+.dealing-seat-bottom {
+  bottom: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* ─── Deck in center ─── */
+.dealing-deck {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 10;
+}
+
+.dealing-deck-card {
+  width: 50px;
+  height: 70px;
+  background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 50%, #1e3a5f 100%);
+  border: 2px solid #3b82f6;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.4),
+    2px 2px 0 rgba(30, 58, 95, 0.8),
+    4px 4px 0 rgba(30, 58, 95, 0.6);
+}
+
+.dealing-deck-inner {
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 24px;
+}
+
+/* ─── Flying cards ─── */
+.dealing-card {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 36px;
+  height: 50px;
+  margin-left: -18px;
+  margin-top: -25px;
+  z-index: 15;
+  opacity: 0;
+  animation: dealFly var(--fly-duration, 300ms) ease-out forwards;
+  pointer-events: none;
+}
+
+@keyframes dealFly {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+  80% {
+    opacity: 1;
+    transform: translate(
+      calc(var(--target-x) * 3.5),
+      calc(var(--target-y) * 3.5)
+    ) scale(0.7);
+  }
+  100% {
+    opacity: 0.6;
+    transform: translate(
+      calc(var(--target-x) * 3.5),
+      calc(var(--target-y) * 3.5)
+    ) scale(0.6);
+  }
+}
+
+.dealing-card-back {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 50%, #1e3a5f 100%);
+  border: 1.5px solid #3b82f6;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.3);
+  font-size: 16px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* ─── Face-up card (for player's own cards) ─── */
+.dealing-card-face {
+  width: 100%;
+  height: 100%;
+  perspective: 200px;
+}
+
+.dealing-face-inner {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 50%, #1e3a5f 100%);
+  border: 1.5px solid #3b82f6;
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.3);
+  font-size: 16px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  transition: all 0.3s ease;
+}
+
+.dealing-face-inner.revealed {
+  background: white;
+  border-color: #d1d5db;
+}
+
+.dealing-face-inner.revealed.red {
+  color: #dc2626;
+}
+
+.dealing-face-inner.revealed.black {
+  color: #1e293b;
+}
+
+.dealing-face-inner .df-rank,
+.dealing-face-inner .df-suit {
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.dealing-face-inner.revealed .df-rank,
+.dealing-face-inner.revealed .df-suit {
+  opacity: 1;
+}
+
+.df-rank {
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.df-suit {
+  font-size: 14px;
+  line-height: 1;
+}
+
+/* ─── Round label ─── */
+.dealing-round-label {
+  font-size: 18px;
+  font-weight: 700;
+  color: #fbbf24;
+  text-align: center;
+  animation: fadeInUp 0.5s ease;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ═══════════════════════════════════════════
+   MOBILE DEALING
+   ═══════════════════════════════════════════ */
+.dealing-mobile .dealing-table {
+  width: 95%;
+  height: 300px;
+  border-radius: 30px;
+  border-width: 4px;
+}
+
+.dealing-mobile .dealing-seat-name {
+  font-size: 11px;
+  padding: 4px 8px;
+}
+
+.dealing-mobile .dealing-deck-card {
+  width: 40px;
+  height: 56px;
+}
+
+.dealing-mobile .dealing-deck-inner {
+  font-size: 18px;
+}
+
+.dealing-mobile .dealing-card {
+  width: 28px;
+  height: 40px;
+  margin-left: -14px;
+  margin-top: -20px;
+}
+
+.dealing-mobile .dealing-card-back {
+  font-size: 12px;
+}
+
+.dealing-mobile .df-rank {
+  font-size: 10px;
+}
+
+.dealing-mobile .df-suit {
+  font-size: 11px;
+}
+
+.dealing-mobile .dealing-round-label {
+  font-size: 15px;
+}
+
+/* Adjust seat positions for mobile's rectangular table */
+.dealing-mobile .dealing-seat-top {
+  top: -16px;
+}
+
+.dealing-mobile .dealing-seat-top-left {
+  top: 10px;
+  left: 8%;
+}
+
+.dealing-mobile .dealing-seat-top-right {
+  top: 10px;
+  left: 92%;
+}
+
+.dealing-mobile .dealing-seat-left {
+  left: -5px;
+}
+
+.dealing-mobile .dealing-seat-right {
+  right: -5px;
+}
+
+.dealing-mobile .dealing-seat-bottom-left {
+  bottom: 10px;
+  left: 10%;
+}
+
+.dealing-mobile .dealing-seat-bottom-right {
+  bottom: 10px;
+  right: 10%;
+}
+
+.dealing-mobile .dealing-seat-bottom {
+  bottom: -16px;
+}
