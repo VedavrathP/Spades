@@ -166,15 +166,6 @@
   animation: shake 0.3s ease;
 }
 
-/* ─── Bidding Area ─── */
-.bidding-area {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  padding-bottom: 60px;
-}
-
 /* ═══════════════════════════════════════════
    TABLE LAYOUT — DESKTOP
    ═══════════════════════════════════════════ */
@@ -395,6 +386,52 @@
   align-items: center;
   justify-content: center;
   z-index: 10;
+}
+
+/* Overlay for BidPanel / NilPrompt inside the table center */
+.table-center-overlay {
+  position: relative;
+  z-index: 15;
+  max-width: 420px;
+  width: 100%;
+}
+
+.table-center-overlay .bid-panel,
+.table-center-overlay .nil-prompt {
+  padding: 0;
+  margin: 0;
+}
+
+.table-center-overlay .bid-panel {
+  background: rgba(15, 23, 42, 0.92);
+  border: 1px solid rgba(100, 116, 139, 0.4);
+  backdrop-filter: blur(8px);
+  border-radius: 14px;
+  padding: 18px 20px;
+  max-width: none;
+}
+
+.table-center-overlay .nil-prompt {
+  padding: 0;
+}
+
+.table-center-overlay .nil-modal,
+.table-center-overlay .nil-decided {
+  background: rgba(15, 23, 42, 0.92);
+  border: 1px solid rgba(100, 116, 139, 0.4);
+  backdrop-filter: blur(8px);
+  border-radius: 14px;
+  padding: 18px 20px;
+}
+
+/* Mobile center area */
+.mobile-center-area {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  min-height: 120px;
 }
 
 .my-played {
@@ -798,6 +835,28 @@
     display: flex;
     flex-direction: column;
     align-items: center;
+  }
+
+  /* Mobile center area for all phases */
+  .mobile-center-area {
+    min-height: 100px;
+    padding: 4px;
+  }
+
+  .mobile-center-area .bid-panel {
+    max-width: 100%;
+    margin: 0;
+    padding: 14px 12px;
+    font-size: 13px;
+  }
+
+  .mobile-center-area .nil-prompt {
+    padding: 0;
+  }
+
+  .mobile-center-area .nil-modal {
+    padding: 16px 12px;
+    max-width: 100%;
   }
 }
 

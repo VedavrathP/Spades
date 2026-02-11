@@ -279,24 +279,8 @@ export default function GameBoard() {
         />
       )}
 
-      {/* Nil Prompt */}
-      {!isDealing && gameState.phase === 'nil-prompt' && <NilPrompt />}
-
-      {/* Bid Panel + Hand visible during bidding */}
-      {!isDealing && gameState.phase === 'bidding' && (
-        <div className="bidding-area">
-          <BidPanel />
-          <Hand
-            cards={myHand}
-            onPlayCard={() => {}}
-            isMyTurn={false}
-            phase={gameState.phase}
-          />
-        </div>
-      )}
-
-      {/* ─── TABLE VIEW (playing phase) ─── */}
-      {gameState.phase === 'playing' && (
+      {/* ─── TABLE VIEW (always visible during all game phases) ─── */}
+      {!isDealing && (
         <div className="table-container">
           {isMobile ? (
             /* ═══ MOBILE LAYOUT ═══ */
@@ -304,7 +288,7 @@ export default function GameBoard() {
               {/* Scrollable opponents strip */}
               <div className="mobile-opponents-strip">
                 {otherPlayers.map(name => {
-                  const isActive = gameState.currentPlayer === name;
+                  const isActive = gameState.phase === 'playing' && gameState.currentPlayer === name;
                   const cardPlayed = trickCardByPlayer[name];
                   const cardDisplay = cardPlayed ? getCardDisplay(cardPlayed) : null;
                   const cardCount = gameState.otherHandCounts[name] || 0;
@@ -314,7 +298,9 @@ export default function GameBoard() {
                       <div className={`seat-player ${isActive ? 'active-turn' : ''}`}>
                         <div className="seat-name">{name}</div>
                         <div className="seat-stats">
-                          <span>B:{gameState.nilBids[name] ? 'NIL' : gameState.bids[name]}</span>
+                          {gameState.bids[name] !== undefined && (
+                            <span>B:{gameState.nilBids[name] ? 'NIL' : gameState.bids[name]}</span>
+                          )}
                           <span>W:{gameState.tricksWon[name] || 0}</span>
                         </div>
                         <CardBacks count={cardCount} />
@@ -330,24 +316,30 @@ export default function GameBoard() {
                 })}
               </div>
 
-              {/* Center trick area — all played cards */}
-              <div className="mobile-trick-center">
-                {gameState.currentTrick.map((play, i) => {
-                  const d = getCardDisplay(play.card);
-                  return (
-                    <div key={i} className="mobile-trick-card-wrapper">
-                      <div className={`table-played-card ${play.playerId === playerName ? 'my-played' : ''} ${d.color === '#e74c3c' ? 'red' : 'black'}`}>
-                        <span className="tpc-rank">{d.rank}</span>
-                        <span className="tpc-suit">{d.symbol}</span>
-                      </div>
-                      <span className="mobile-trick-label">{play.playerId === playerName ? 'You' : play.playerId}</span>
-                    </div>
-                  );
-                })}
+              {/* Center area — phase-dependent content */}
+              <div className="mobile-center-area">
+                {gameState.phase === 'nil-prompt' && <NilPrompt />}
+                {gameState.phase === 'bidding' && <BidPanel />}
+                {gameState.phase === 'playing' && (
+                  <div className="mobile-trick-center">
+                    {gameState.currentTrick.map((play, i) => {
+                      const d = getCardDisplay(play.card);
+                      return (
+                        <div key={i} className="mobile-trick-card-wrapper">
+                          <div className={`table-played-card ${play.playerId === playerName ? 'my-played' : ''} ${d.color === '#e74c3c' ? 'red' : 'black'}`}>
+                            <span className="tpc-rank">{d.rank}</span>
+                            <span className="tpc-suit">{d.symbol}</span>
+                          </div>
+                          <span className="mobile-trick-label">{play.playerId === playerName ? 'You' : play.playerId}</span>
+                        </div>
+                      );
+                    })}
 
-                {trickResult && (
-                  <div className="trick-result-bubble">
-                    <span className="trick-winner">{trickResult.winner} wins!</span>
+                    {trickResult && (
+                      <div className="trick-result-bubble">
+                        <span className="trick-winner">{trickResult.winner} wins!</span>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -356,7 +348,9 @@ export default function GameBoard() {
               <div className={`seat-player my-seat ${isMyTurn ? 'active-turn' : ''}`} style={{ margin: '0 auto', width: 'fit-content' }}>
                 <div className="seat-name">{playerName} (You)</div>
                 <div className="seat-stats">
-                  <span>Bid: {gameState.nilBids[playerName] ? 'NIL' : gameState.bids[playerName]}</span>
+                  {gameState.bids[playerName] !== undefined && (
+                    <span>Bid: {gameState.nilBids[playerName] ? 'NIL' : gameState.bids[playerName]}</span>
+                  )}
                   <span>Won: {gameState.tricksWon[playerName] || 0}</span>
                   <span>Score: {gameState.scores[playerName] || 0}</span>
                 </div>
@@ -367,7 +361,7 @@ export default function GameBoard() {
             <div className="table">
               <div className="table-felt">
                 {seatedPlayers.map(({ name, position }) => {
-                  const isActive = gameState.currentPlayer === name;
+                  const isActive = gameState.phase === 'playing' && gameState.currentPlayer === name;
                   const cardPlayed = trickCardByPlayer[name];
                   const cardDisplay = cardPlayed ? getCardDisplay(cardPlayed) : null;
                   const cardCount = gameState.otherHandCounts[name] || 0;
@@ -377,7 +371,9 @@ export default function GameBoard() {
                       <div className={`seat-player ${isActive ? 'active-turn' : ''}`}>
                         <div className="seat-name">{name}</div>
                         <div className="seat-stats">
-                          <span>B:{gameState.nilBids[name] ? 'NIL' : gameState.bids[name]}</span>
+                          {gameState.bids[name] !== undefined && (
+                            <span>B:{gameState.nilBids[name] ? 'NIL' : gameState.bids[name]}</span>
+                          )}
                           <span>W:{gameState.tricksWon[name] || 0}</span>
                         </div>
                         <CardBacks count={cardCount} />
@@ -393,21 +389,36 @@ export default function GameBoard() {
                   );
                 })}
 
+                {/* Table center — shows phase-dependent content */}
                 <div className="table-center">
-                  {trickCardByPlayer[playerName] && (() => {
-                    const d = getCardDisplay(trickCardByPlayer[playerName]);
-                    return (
-                      <div className={`table-played-card my-played ${d.color === '#e74c3c' ? 'red' : 'black'}`}>
-                        <span className="tpc-rank">{d.rank}</span>
-                        <span className="tpc-suit">{d.symbol}</span>
-                      </div>
-                    );
-                  })()}
-
-                  {trickResult && (
-                    <div className="trick-result-bubble">
-                      <span className="trick-winner">{trickResult.winner} wins!</span>
+                  {gameState.phase === 'nil-prompt' && (
+                    <div className="table-center-overlay">
+                      <NilPrompt />
                     </div>
+                  )}
+                  {gameState.phase === 'bidding' && (
+                    <div className="table-center-overlay">
+                      <BidPanel />
+                    </div>
+                  )}
+                  {gameState.phase === 'playing' && (
+                    <>
+                      {trickCardByPlayer[playerName] && (() => {
+                        const d = getCardDisplay(trickCardByPlayer[playerName]);
+                        return (
+                          <div className={`table-played-card my-played ${d.color === '#e74c3c' ? 'red' : 'black'}`}>
+                            <span className="tpc-rank">{d.rank}</span>
+                            <span className="tpc-suit">{d.symbol}</span>
+                          </div>
+                        );
+                      })()}
+
+                      {trickResult && (
+                        <div className="trick-result-bubble">
+                          <span className="trick-winner">{trickResult.winner} wins!</span>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
 
@@ -415,7 +426,9 @@ export default function GameBoard() {
                   <div className={`seat-player my-seat ${isMyTurn ? 'active-turn' : ''}`}>
                     <div className="seat-name">{playerName} (You)</div>
                     <div className="seat-stats">
-                      <span>Bid: {gameState.nilBids[playerName] ? 'NIL' : gameState.bids[playerName]}</span>
+                      {gameState.bids[playerName] !== undefined && (
+                        <span>Bid: {gameState.nilBids[playerName] ? 'NIL' : gameState.bids[playerName]}</span>
+                      )}
                       <span>Won: {gameState.tricksWon[playerName] || 0}</span>
                       <span>Score: {gameState.scores[playerName] || 0}</span>
                     </div>
@@ -425,13 +438,15 @@ export default function GameBoard() {
             </div>
           )}
 
-          {/* My Hand */}
-          <Hand
-            cards={myHand}
-            onPlayCard={playCard}
-            isMyTurn={isMyTurn}
-            phase={gameState.phase}
-          />
+          {/* My Hand — visible during bidding and playing */}
+          {(gameState.phase === 'bidding' || gameState.phase === 'playing') && (
+            <Hand
+              cards={myHand}
+              onPlayCard={gameState.phase === 'playing' ? playCard : () => {}}
+              isMyTurn={isMyTurn}
+              phase={gameState.phase}
+            />
+          )}
         </div>
       )}
 
