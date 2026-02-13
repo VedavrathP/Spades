@@ -2,11 +2,13 @@ import { useGame } from '../context/GameContext';
 import './NilPrompt.css';
 
 export default function NilPrompt() {
-  const { gameState, makeNilDecision, playerName } = useGame();
+  const { gameState, makeNilDecision, playerName, roomState, hostUndo } = useGame();
 
   if (!gameState || gameState.phase !== 'nil-prompt') return null;
 
   const alreadyDecided = gameState.nilBids[playerName] === true || gameState.nilBids[playerName] === false;
+  const isHost = roomState?.players?.find(p => p.name === playerName)?.id === roomState?.hostId;
+  const hasDecisionsToUndo = gameState.playerOrder.some(p => gameState.nilBids[p] === true || gameState.nilBids[p] === false);
 
   if (alreadyDecided) {
     return (
@@ -25,6 +27,11 @@ export default function NilPrompt() {
               </div>
             ))}
           </div>
+          {isHost && hasDecisionsToUndo && (
+            <button className="btn btn-undo" onClick={hostUndo} style={{ marginTop: '12px' }}>
+              ↩️ Undo Last Decision
+            </button>
+          )}
         </div>
       </div>
     );
@@ -55,6 +62,12 @@ export default function NilPrompt() {
             <span className="btn-sub">Bid normally this round</span>
           </button>
         </div>
+
+        {isHost && hasDecisionsToUndo && (
+          <button className="btn btn-undo" onClick={hostUndo} style={{ marginTop: '12px' }}>
+            ↩️ Undo Last Decision
+          </button>
+        )}
       </div>
     </div>
   );

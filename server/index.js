@@ -125,6 +125,39 @@ function advancePlayer(gs) {
   gs.currentPlayerIndex = (gs.currentPlayerIndex + 1) % gs.playerOrder.length;
 }
 
+// ─── Helper: find the last player who placed a bid (for undo) ───
+// Walk backwards from the current bidder to find who bid most recently.
+function findLastBidder(gs) {
+  const n = gs.playerOrder.length;
+  // Start from the player just before the current bidder and walk backwards
+  let idx = (gs.currentPlayerIndex - 1 + n) % n;
+  let safety = 0;
+  while (safety < n) {
+    const name = gs.playerOrder[idx];
+    // Skip nil players (their bid=0 is set by nil decision, not by bidding)
+    if (gs.nilBids[name] !== true && gs.bids[name] !== undefined) {
+      return name;
+    }
+    idx = (idx - 1 + n) % n;
+    safety++;
+  }
+  return null;
+}
+
+// ─── Helper: find the last player who made a nil decision (for undo) ───
+function findLastNilDecider(gs) {
+  // Walk through player order and find the last one who decided
+  // (Since nil decisions are simultaneous, we just find any decided player —
+  //  but prefer the last one in order for consistency)
+  let lastDecider = null;
+  for (const name of gs.playerOrder) {
+    if (gs.nilBids[name] === true || gs.nilBids[name] === false) {
+      lastDecider = name;
+    }
+  }
+  return lastDecider;
+}
+
 // ─── Helper: skip disconnected players ───
 // If the current player is disconnected, auto-skip them.
 // For playing phase: auto-play their first valid card.
@@ -623,6 +656,94 @@ io.on('connection', (socket) => {
     broadcastGameState(roomCode);
     // Check if the next player to act is disconnected
     setTimeout(() => handleDisconnectedTurn(roomCode), 300);
+  });
+
+  // ─── HOST UNDO (undo last bid or nil decision) ───
+
+  socket.on('host-undo', ({ roomCode }, callback) => {
+    const room = roomManager.getRoom(roomCode);
+    if (!room || !room.gameState) {
+      callback && callback({ success: false, error: 'No active game' });
+      return;
+    }
+    if (room.hostId !== socket.id) {
+      callback && callback({ success: false, error: 'Only the host can undo' });
+      return;
+    }
+
+    const gs = room.gameState;
+
+    if (gs.phase === 'playing' && gs.currentTrick.length === 0 && gs.trickNumber === 0) {
+      // Playing phase just started, no cards played yet — revert to bidding
+      // Undo the last bid
+      gs.phase = 'bidding';
+
+      // Find the last player who bid (walk backwards from biddingStartIndex)
+      const lastBidder = findLastBidder(gs);
+      if (lastBidder) {
+        delete gs.bids[lastBidder];
+        gs.currentPlayerIndex = gs.playerOrder.indexOf(lastBidder);
+        console.log(`[${roomCode}] Host undo: reverted to bidding, undid bid for ${lastBidder}`);
+      }
+
+      broadcastGameState(roomCode);
+      callback && callback({ success: true, undone: 'bid', player: lastBidder });
+      return;
+    }
+
+    if (gs.phase === 'bidding') {
+      // Find the last player who bid and undo it
+      const lastBidder = findLastBidder(gs);
+      if (!lastBidder) {
+        // No bids to undo — check if we should revert to nil-prompt
+        if (gs.currentRound >= 10) {
+          // Revert to nil-prompt phase, undo the last nil decision
+          gs.phase = 'nil-prompt';
+          const lastNilDecider = findLastNilDecider(gs);
+          if (lastNilDecider) {
+            // If they went nil, also remove their bid
+            if (gs.nilBids[lastNilDecider] === true) {
+              delete gs.bids[lastNilDecider];
+            }
+            delete gs.nilBids[lastNilDecider];
+            console.log(`[${roomCode}] Host undo: reverted to nil-prompt, undid nil decision for ${lastNilDecider}`);
+            broadcastGameState(roomCode);
+            callback && callback({ success: true, undone: 'nil', player: lastNilDecider });
+            return;
+          }
+        }
+        callback && callback({ success: false, error: 'Nothing to undo' });
+        return;
+      }
+
+      delete gs.bids[lastBidder];
+      gs.currentPlayerIndex = gs.playerOrder.indexOf(lastBidder);
+      console.log(`[${roomCode}] Host undo: undid bid for ${lastBidder}`);
+      broadcastGameState(roomCode);
+      callback && callback({ success: true, undone: 'bid', player: lastBidder });
+      return;
+    }
+
+    if (gs.phase === 'nil-prompt') {
+      // Find the last player who made a nil decision and undo it
+      const lastNilDecider = findLastNilDecider(gs);
+      if (!lastNilDecider) {
+        callback && callback({ success: false, error: 'Nothing to undo' });
+        return;
+      }
+
+      // If they went nil, also remove their bid
+      if (gs.nilBids[lastNilDecider] === true) {
+        delete gs.bids[lastNilDecider];
+      }
+      delete gs.nilBids[lastNilDecider];
+      console.log(`[${roomCode}] Host undo: undid nil decision for ${lastNilDecider}`);
+      broadcastGameState(roomCode);
+      callback && callback({ success: true, undone: 'nil', player: lastNilDecider });
+      return;
+    }
+
+    callback && callback({ success: false, error: 'Cannot undo during this phase' });
   });
 
   // ─── PLAY CARD ───

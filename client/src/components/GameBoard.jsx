@@ -65,7 +65,7 @@ export default function GameBoard() {
   const {
     gameState, playerName, roomCode, trickResult, roundEnd,
     playCard, nextRound, roomState, error,
-    restartGame, endGame, leaveGame, playedCardId, reconnecting
+    restartGame, endGame, leaveGame, hostUndo, playedCardId, reconnecting
   } = useGame();
   const [scoreExpanded, setScoreExpanded] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 600);
@@ -352,6 +352,13 @@ export default function GameBoard() {
                       <div className="trick-result-bubble">
                         <span className="trick-winner">{trickResult.winner} wins!</span>
                       </div>
+                    )}
+
+                    {/* Host can undo last bid if no cards played yet */}
+                    {isHost && gameState.trickNumber === 0 && gameState.currentTrick.length === 0 && (
+                      <button className="btn btn-undo btn-undo-playing" onClick={hostUndo}>
+                        ↩️ Undo Last Bid
+                      </button>
                     )}
                   </>
                 )}

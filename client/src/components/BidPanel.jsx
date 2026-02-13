@@ -3,7 +3,7 @@ import { useGame } from '../context/GameContext';
 import './BidPanel.css';
 
 export default function BidPanel() {
-  const { gameState, placeBid, playerName } = useGame();
+  const { gameState, placeBid, playerName, roomState, hostUndo } = useGame();
   const [selectedBid, setSelectedBid] = useState(0);
 
   if (!gameState || gameState.phase !== 'bidding') return null;
@@ -11,6 +11,8 @@ export default function BidPanel() {
   const isMyTurnToBid = gameState.currentPlayer === playerName && gameState.bids[playerName] === undefined;
   const alreadyBid = gameState.bids[playerName] !== undefined;
   const maxBid = gameState.currentRound;
+  const isHost = roomState?.players?.find(p => p.name === playerName)?.id === roomState?.hostId;
+  const hasBidsToUndo = gameState.playerOrder.some(p => gameState.nilBids[p] !== true && gameState.bids[p] !== undefined);
 
   return (
     <div className="bid-panel">
@@ -64,6 +66,13 @@ export default function BidPanel() {
           </div>
         ))}
       </div>
+
+      {/* Host undo button */}
+      {isHost && (hasBidsToUndo || gameState.currentRound >= 10) && (
+        <button className="btn btn-undo" onClick={hostUndo}>
+          ↩️ Undo Last
+        </button>
+      )}
     </div>
   );
 }

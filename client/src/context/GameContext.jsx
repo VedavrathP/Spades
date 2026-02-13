@@ -286,6 +286,21 @@ export function GameProvider({ children }) {
     });
   }, [roomCode]);
 
+  const hostUndo = useCallback(() => {
+    if (!socketRef.current) return;
+    socketRef.current.emit('host-undo', { roomCode }, (response) => {
+      if (response.success) {
+        const who = response.player || 'someone';
+        const what = response.undone === 'nil' ? 'nil decision' : 'bid';
+        setError(`↩️ Undid ${what} for ${who}`);
+        setTimeout(() => setError(''), 3000);
+      } else {
+        setError(response.error || 'Nothing to undo');
+        setTimeout(() => setError(''), 3000);
+      }
+    });
+  }, [roomCode]);
+
   const leaveGame = useCallback(() => {
     if (!socketRef.current) return;
     socketRef.current.emit('leave-game', { roomCode }, (response) => {
@@ -327,6 +342,7 @@ export function GameProvider({ children }) {
     restartGame,
     endGame,
     leaveGame,
+    hostUndo,
     setError,
     setScreen
   };

@@ -832,6 +832,31 @@
   }
 }
 
+/* ─── Host Undo Button ─── */
+.btn-undo {
+  background: rgba(251, 191, 36, 0.15);
+  color: var(--gold);
+  border: 1px solid rgba(251, 191, 36, 0.4);
+  border-radius: var(--radius-sm);
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-top: 10px;
+}
+
+.btn-undo:hover {
+  background: rgba(251, 191, 36, 0.25);
+  border-color: var(--gold);
+}
+
+.btn-undo-playing {
+  margin-top: 8px;
+  font-size: 12px;
+  padding: 5px 12px;
+}
+
 @keyframes scaleIn {
   from { opacity: 0; transform: scale(0.9); }
   to { opacity: 1; transform: scale(1); }
