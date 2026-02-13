@@ -1,8 +1,8 @@
 import { getCardDisplay } from '../utils/cardUtils';
 import './Hand.css';
 
-export default function Hand({ cards, onPlayCard, isMyTurn, phase }) {
-  const canPlay = isMyTurn && phase === 'playing';
+export default function Hand({ cards, onPlayCard, isMyTurn, phase, playedCardId }) {
+  const canPlay = isMyTurn && phase === 'playing' && !playedCardId;
   const totalCards = cards.length;
 
   // Split into two rows if more than 6 cards
@@ -20,7 +20,7 @@ export default function Hand({ cards, onPlayCard, isMyTurn, phase }) {
     return (
       <div
         key={card.id}
-        className={`card ${canPlay ? 'playable' : ''} ${display.color === '#e74c3c' ? 'red' : 'black'}`}
+        className={`card ${canPlay ? 'playable' : ''} ${playedCardId === card.id ? 'card-played' : ''} ${display.color === '#e74c3c' ? 'red' : 'black'}`}
         style={{
           transform: useRows ? 'none' : `rotate(${rotation}deg) translateY(${translateY}px)`,
           zIndex: index

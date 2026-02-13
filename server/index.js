@@ -14,10 +14,26 @@ const io = new Server(server, {
   cors: {
     origin: process.env.NODE_ENV === 'production' ? false : ['http://localhost:5173', 'http://localhost:3000'],
     methods: ['GET', 'POST']
-  }
+  },
+  pingTimeout: 30000,      // Wait 30s before considering a client disconnected
+  pingInterval: 10000,     // Ping every 10s to keep connection alive
+  connectTimeout: 20000    // Allow 20s for initial connection
 });
 
 app.use(cors());
+
+// Per-room processing locks to prevent race conditions (e.g. double card play)
+const roomLocks = new Map();
+
+function acquireRoomLock(roomCode) {
+  if (roomLocks.get(roomCode)) return false; // Already locked
+  roomLocks.set(roomCode, true);
+  return true;
+}
+
+function releaseRoomLock(roomCode) {
+  roomLocks.delete(roomCode);
+}
 
 // Serve static files in production
 if (process.env.NODE_ENV === 'production') {
@@ -612,52 +628,61 @@ io.on('connection', (socket) => {
   // ─── PLAY CARD ───
 
   socket.on('play-card', ({ roomCode, cardId }) => {
-    const room = roomManager.getRoom(roomCode);
-    if (!room || !room.gameState) return;
-    const gs = room.gameState;
-    const playerName = roomManager.getPlayerName(room, socket.id);
-    if (!playerName) return;
-    if (gs.phase !== 'playing') return;
-    if (gameEngine.getCurrentPlayer(gs) !== playerName) return;
-
-    const hand = gs.hands[playerName];
-    const cardIndex = hand.findIndex(c => c.id === cardId);
-    if (cardIndex === -1) return;
-
-    const card = hand[cardIndex];
-    const isLeading = gs.currentTrick.length === 0;
-    const ledSuit = isLeading ? null : gs.currentTrick[0].card.suit;
-
-    // Validate play
-    if (!gameEngine.isValidPlay(card, hand, ledSuit, gs.spadesBroken, isLeading)) {
-      socket.emit('invalid-play', { message: 'Invalid card play. Follow suit if possible.' });
-      return;
+    // Acquire lock to prevent double card plays from rapid clicks
+    if (!acquireRoomLock(roomCode)) {
+      return; // Another play is being processed
     }
 
-    // Set led suit if leading
-    if (isLeading) {
-      gs.ledSuit = card.suit;
-    }
+    try {
+      const room = roomManager.getRoom(roomCode);
+      if (!room || !room.gameState) return;
+      const gs = room.gameState;
+      const playerName = roomManager.getPlayerName(room, socket.id);
+      if (!playerName) return;
+      if (gs.phase !== 'playing') return;
+      if (gameEngine.getCurrentPlayer(gs) !== playerName) return;
 
-    // Check if spades broken
-    if (card.suit === 'spades' && !gs.spadesBroken) {
-      gs.spadesBroken = true;
-    }
+      const hand = gs.hands[playerName];
+      const cardIndex = hand.findIndex(c => c.id === cardId);
+      if (cardIndex === -1) return;
 
-    // Remove card from hand
-    hand.splice(cardIndex, 1);
+      const card = hand[cardIndex];
+      const isLeading = gs.currentTrick.length === 0;
+      const ledSuit = isLeading ? null : gs.currentTrick[0].card.suit;
 
-    // Add to current trick
-    gs.currentTrick.push({ playerId: playerName, card });
+      // Validate play
+      if (!gameEngine.isValidPlay(card, hand, ledSuit, gs.spadesBroken, isLeading)) {
+        socket.emit('invalid-play', { message: 'Invalid card play. Follow suit if possible.' });
+        return;
+      }
 
-    // Advance to next player or end trick
-    if (gs.currentTrick.length === gs.playerOrder.length) {
-      // All players have played — resolve trick
-      broadcastGameState(roomCode);
-      setTimeout(() => processEndOfTrick(roomCode), 500);
-    } else {
-      advancePlayer(gs);
-      broadcastGameState(roomCode);
+      // Set led suit if leading
+      if (isLeading) {
+        gs.ledSuit = card.suit;
+      }
+
+      // Check if spades broken
+      if (card.suit === 'spades' && !gs.spadesBroken) {
+        gs.spadesBroken = true;
+      }
+
+      // Remove card from hand
+      hand.splice(cardIndex, 1);
+
+      // Add to current trick
+      gs.currentTrick.push({ playerId: playerName, card });
+
+      // Advance to next player or end trick
+      if (gs.currentTrick.length === gs.playerOrder.length) {
+        // All players have played — resolve trick
+        broadcastGameState(roomCode);
+        setTimeout(() => processEndOfTrick(roomCode), 500);
+      } else {
+        advancePlayer(gs);
+        broadcastGameState(roomCode);
+      }
+    } finally {
+      releaseRoomLock(roomCode);
     }
   });
 

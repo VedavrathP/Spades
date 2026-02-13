@@ -166,6 +166,31 @@
   animation: shake 0.3s ease;
 }
 
+.reconnecting-banner {
+  background: rgba(251, 191, 36, 0.15);
+  border: 1px solid var(--gold);
+  color: var(--gold);
+  padding: 8px 16px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.reconnecting-spinner {
+  display: inline-block;
+  animation: spin 1s linear infinite;
+  font-size: 16px;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 /* ═══════════════════════════════════════════
    TABLE LAYOUT — DESKTOP
    ═══════════════════════════════════════════ */

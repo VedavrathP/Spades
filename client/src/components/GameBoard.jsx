@@ -65,7 +65,7 @@ export default function GameBoard() {
   const {
     gameState, playerName, roomCode, trickResult, roundEnd,
     playCard, nextRound, roomState, error,
-    restartGame, endGame, leaveGame
+    restartGame, endGame, leaveGame, playedCardId, reconnecting
   } = useGame();
   const [scoreExpanded, setScoreExpanded] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 600);
@@ -265,6 +265,11 @@ export default function GameBoard() {
       </div>
 
       {error && <div className="game-error">{error}</div>}
+      {reconnecting && (
+        <div className="reconnecting-banner">
+          <span className="reconnecting-spinner">⟳</span> Reconnecting to server...
+        </div>
+      )}
 
       {/* Dealing Animation */}
       {isDealing && (
@@ -375,6 +380,7 @@ export default function GameBoard() {
               onPlayCard={gameState.phase === 'playing' ? playCard : () => {}}
               isMyTurn={isMyTurn}
               phase={gameState.phase}
+              playedCardId={playedCardId}
             />
           )}
         </div>

@@ -57,6 +57,13 @@
   z-index: 100 !important;
 }
 
+/* Card that was just played — visual feedback while waiting for server */
+.card.card-played {
+  opacity: 0.4;
+  transform: translateY(-10px) scale(0.95) !important;
+  pointer-events: none;
+}
+
 .card.red .card-rank,
 .card.red .card-suit,
 .card.red .card-suit-large {

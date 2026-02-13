@@ -8,6 +8,7 @@ const SOCKET_URL = import.meta.env.PROD ? '' : 'http://localhost:3001';
 export function GameProvider({ children }) {
   const socketRef = useRef(null);
   const [connected, setConnected] = useState(false);
+  const [reconnecting, setReconnecting] = useState(false);
   const [playerName, setPlayerName] = useState(() => sessionStorage.getItem('spades_playerName') || '');
   const [roomCode, setRoomCode] = useState(() => sessionStorage.getItem('spades_roomCode') || '');
   const [roomState, setRoomState] = useState(null);
@@ -17,6 +18,7 @@ export function GameProvider({ children }) {
   const [trickResult, setTrickResult] = useState(null);
   const [roundEnd, setRoundEnd] = useState(null);
   const hasAttemptedRejoin = useRef(false);
+  const [playedCardId, setPlayedCardId] = useState(null); // Optimistic lock for card plays
 
   // Persist playerName and roomCode to sessionStorage
   useEffect(() => {
@@ -47,8 +49,11 @@ export function GameProvider({ children }) {
     const s = io(SOCKET_URL, {
       autoConnect: true,
       reconnection: true,
-      reconnectionAttempts: 10,
-      reconnectionDelay: 1000
+      reconnectionAttempts: Infinity,  // Keep trying forever
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,      // Max 5s between attempts
+      timeout: 20000,                  // 20s connection timeout
+      transports: ['websocket', 'polling'] // Prefer websocket, fallback to polling
     });
 
     socketRef.current = s;
@@ -78,7 +83,37 @@ export function GameProvider({ children }) {
       }
     });
 
-    s.on('disconnect', () => setConnected(false));
+    s.on('disconnect', () => {
+      setConnected(false);
+      setReconnecting(true);
+    });
+
+    s.on('reconnect', () => {
+      // Socket.IO reconnected — auto-rejoin the room
+      setReconnecting(false);
+      setConnected(true);
+      const savedName = sessionStorage.getItem('spades_playerName');
+      const savedRoom = sessionStorage.getItem('spades_roomCode');
+      if (savedName && savedRoom) {
+        s.emit('join-room', { roomCode: savedRoom, playerName: savedName }, (response) => {
+          if (response.success) {
+            console.log('Auto-rejoined room after reconnection');
+          } else {
+            console.warn('Failed to rejoin after reconnect:', response.error);
+          }
+        });
+      }
+    });
+
+    s.on('reconnect_attempt', (attempt) => {
+      setReconnecting(true);
+      console.log(`Reconnection attempt ${attempt}...`);
+    });
+
+    s.on('reconnect_failed', () => {
+      setReconnecting(false);
+      setError('Connection lost. Please refresh the page.');
+    });
 
     s.on('room-update', (data) => {
       setRoomState(data);
@@ -89,6 +124,7 @@ export function GameProvider({ children }) {
 
     s.on('game-state', (data) => {
       setGameState(data);
+      setPlayedCardId(null); // Clear optimistic lock — server has processed the play
       setScreen('game');
     });
 
@@ -199,8 +235,10 @@ export function GameProvider({ children }) {
 
   const playCard = useCallback((cardId) => {
     if (!socketRef.current) return;
+    if (playedCardId) return; // Already played a card, waiting for server response
+    setPlayedCardId(cardId);
     socketRef.current.emit('play-card', { roomCode, cardId });
-  }, [roomCode]);
+  }, [roomCode, playedCardId]);
 
   const nextRound = useCallback(() => {
     if (!socketRef.current) return;
@@ -264,6 +302,7 @@ export function GameProvider({ children }) {
 
   const value = {
     connected,
+    reconnecting,
     playerName,
     roomCode,
     roomState,
@@ -272,6 +311,7 @@ export function GameProvider({ children }) {
     error,
     trickResult,
     roundEnd,
+    playedCardId,
     createRoom,
     joinRoom,
     toggleReady,
